@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Assignee {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  avatar    String?
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String   @db.ObjectId
+}
+
+model Client {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  projects  Project[]
+}
+
+model Project {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  status          String
+  team            Team?         @relation(fields: [teamId], references: [id])
+  teamId          String?       @db.ObjectId
+  client          Client?       @relation(fields: [clientId], references: [id])
+  clientId        String?       @db.ObjectId
+  budget          Float?
+  description     String?
+  started         DateTime?
+  deadline        DateTime?
+  assignees       Assignee[]
+  projectLead     String?
+  defaultTaskView String        @default("list")
+  progress        Float         @default(0)
+  tasks           Task[]
+  tags            ProjectTag[]
+  user            User?         @relation(fields: [userId], references: [id])
+  userId          String?       @db.ObjectId
+}
+
+model ProjectTag {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  project   Project   @relation(fields: [projectId], references: [id])
+  projectId String    @db.ObjectId
+  tag       Tag       @relation(fields: [tagId], references: [id])
+  tagId     String    @db.ObjectId
+
+  @@unique([projectId, tagId])
+}
+
+model Tag {
+  id       String        @id @default(auto()) @map("_id") @db.ObjectId
+  name     String        @unique
+  projects ProjectTag[]
+}
+
+model Task {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  status      String
+  attachments Int       @default(0)
+  comments    Int       @default(0)
+  date        String?   // Pour stocker la date au format "2024-11-12"
+  time        String?   // Pour stocker l'heure au format "12:00 PM"
+  dueDateTime DateTime?
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String    @db.ObjectId
+  reminder    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Team {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  members   TeamMember[]
+  projects  Project[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  role      String
+  email     String   @unique
+  phone     String?
+  avatar    String?
+  status    String   @default("ACTIVE")
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  username      String    @unique
+  email         String    @unique
+  password      String
+  role          String    @default("USER")
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLogin     DateTime?
+  preferences   Json?     @default("{\"theme\": \"light\", \"notifications\": true}")
+  projects      Project[]
+  settings      Settings?
+}
+
+model Settings {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyName   String
+  companyEmail  String   @unique
+  companyPhone  String?
+  companyLogo   String?
+  address       String?
+  city          String?
+  country       String?
+  currency      String   @default("USD")
+  dateFormat    String   @default("DD/MM/YYYY")
+  timeZone      String   @default("UTC")
+  fiscalYear    String?
+  taxNumber     String?
+  theme         String   @default("light")
+  notifications Json     @default("{\"email\":false,\"push\":false,\"updates\":false}")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String    @db.ObjectId @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

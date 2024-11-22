@@ -1,0 +1,5521 @@
+==== h:\project3\src\components\AuthChecker.jsx ====
+
+import React from 'react';
+import { useProjects } from './ProjectContext';
+import { LoginForm } from './login-form';
+
+export function AuthChecker({ children }) {
+  const { user } = useProjects();
+
+  return user ? children : <LoginForm />;
+}
+
+
+==== h:\project3\src\components\create-project.jsx ====
+
+import React, { useState } from 'react'
+import { useProjects } from './ProjectContext'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Textarea } from './ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import {
+  Calendar as CalendarIcon,
+  ChevronRight,
+  Users,
+  Tag,
+  Lock,
+  Briefcase,
+  DollarSign,
+  Layout,
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { Calendar } from './ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { cn } from '../lib/utils'
+
+export function CreateProject({ onClose }) {
+  const { addProject } = useProjects()
+  const [startDate, setStartDate] = useState()
+  const [deadline, setDeadline] = useState()
+  const [error, setError] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      const formData = new FormData(e.target)
+      const projectData = {
+        name: formData.get('title'),
+        description: formData.get('overview'),
+        privacy: formData.get('privacy'),
+        team: formData.get('team'),
+        assignees: formData.get('assignees') ? [formData.get('assignees')] : [],
+        projectLead: formData.get('lead'),
+        started: startDate ? format(startDate, 'yyyy-MM-dd') : null,
+        deadline: deadline ? format(deadline, 'yyyy-MM-dd') : null,
+        client: formData.get('client'),
+        budget: parseFloat(formData.get('budget')),
+        tags: formData.get('tags'),
+        defaultTaskView: formData.get('taskView'),
+        status: 'ONGOING',
+        progress: 0,
+      }
+
+      const newProject = await addProject(projectData)
+      if (onClose) {
+        onClose(newProject)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose?.()}>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-indigo-50">
+        <DialogHeader className="space-y-4">
+          <nav className="flex items-center space-x-2 text-sm">
+            <span className="text-blue-600 cursor-pointer hover:underline">Projects</span>
+            <ChevronRight className="h-4 w-4 text-blue-400" />
+            <span className="text-indigo-600 font-medium">Create</span>
+          </nav>
+          <DialogTitle className="text-3xl font-bold text-indigo-900">
+            Create a project
+          </DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <strong className="font-bold">Error: </strong>
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-8 mt-6">
+          <FormField
+            label="Project Title"
+            name="title"
+            icon={<Briefcase className="w-4 h-4" />}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormSelect
+              label="Project Privacy"
+              name="privacy"
+              icon={<Lock className="w-4 h-4" />}
+              options={[
+                { value: 'public', label: 'Public' },
+                { value: 'private', label: 'Private' },
+                { value: 'team', label: 'Team Only' },
+              ]}
+            />
+
+            <FormSelect
+              label="Team"
+              name="team"
+              icon={<Users className="w-4 h-4" />}
+              options={[
+                { value: 'design', label: 'Design Team' },
+                { value: 'development', label: 'Development Team' },
+                { value: 'marketing', label: 'Marketing Team' },
+              ]}
+            />
+
+            <FormSelect
+              label="People"
+              name="assignees"
+              icon={<Users className="w-4 h-4" />}
+              options={[
+                { value: 'user1', label: 'User 1' },
+                { value: 'user2', label: 'User 2' },
+                { value: 'user3', label: 'User 3' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormSelect
+              label="Project Lead"
+              name="lead"
+              icon={<Users className="w-4 h-4" />}
+              options={[
+                { value: 'admin1', label: 'Admin 1' },
+                { value: 'admin2', label: 'Admin 2' },
+              ]}
+            />
+
+            <DatePicker
+              label="Start Date"
+              selected={startDate}
+              onSelect={setStartDate}
+            />
+
+            <DatePicker
+              label="Deadline"
+              selected={deadline}
+              onSelect={setDeadline}
+            />
+          </div>
+
+          <FormTextarea
+            label="Project Overview"
+            name="overview"
+            icon={<Briefcase className="w-4 h-4" />}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormSelect
+              label="Client"
+              name="client"
+              icon={<Briefcase className="w-4 h-4" />}
+              options={[
+                { value: 'client1', label: 'Client 1' },
+                { value: 'client2', label: 'Client 2' },
+                { value: 'client3', label: 'Client 3' },
+              ]}
+            />
+
+            <FormField
+              label="Budget"
+              name="budget"
+              type="number"
+              icon={<DollarSign className="w-4 h-4" />}
+            />
+          </div>
+
+          <FormSelect
+            label="Add Tags"
+            name="tags"
+            icon={<Tag className="w-4 h-4" />}
+            options={[
+              { value: 'tag1', label: 'Tag 1' },
+              { value: 'tag2', label: 'Tag 2' },
+              { value: 'tag3', label: 'Tag 3' },
+            ]}
+          />
+
+          <FormSelect
+            label="Default Task View"
+            name="taskView"
+            icon={<Layout className="w-4 h-4" />}
+            options={[
+              { value: 'list', label: 'List View' },
+              { value: 'board', label: 'Board View' },
+              { value: 'calendar', label: 'Calendar View' },
+            ]}
+          />
+
+          <div className="flex justify-end space-x-4 pt-6">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={onClose}
+              className="text-indigo-600 hover:text-indigo-800 border-indigo-200 hover:border-indigo-400"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Project'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function FormField({ label, name, type = 'text', icon }) {
+  return (
+    <div className="space-y-2">
+      <Label
+        htmlFor={name}
+        className="text-sm font-medium text-indigo-700 flex items-center gap-2"
+      >
+        {icon}
+        {label}
+      </Label>
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        className="w-full border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+        placeholder={`Enter ${label.toLowerCase()}`}
+      />
+    </div>
+  )
+}
+
+function FormSelect({ label, name, options, icon }) {
+  return (
+    <div className="space-y-2">
+      <Label
+        htmlFor={name}
+        className="text-sm font-medium text-indigo-700 flex items-center gap-2"
+      >
+        {icon}
+        {label}
+      </Label>
+      <Select name={name}>
+        <SelectTrigger id={name} className="w-full border-indigo-200">
+          <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(({ value, label }) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function FormTextarea({ label, name, icon }) {
+  return (
+    <div className="space-y-2">
+      <Label
+        htmlFor={name}
+        className="text-sm font-medium text-indigo-700 flex items-center gap-2"
+      >
+        {icon}
+        {label}
+      </Label>
+      <Textarea
+        id={name}
+        name={name}
+        className="w-full min-h-[120px] border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+        placeholder={`Enter ${label.toLowerCase()}`}
+      />
+    </div>
+  )
+}
+
+function DatePicker({ label, selected, onSelect }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-indigo-700 flex items-center gap-2">
+        <CalendarIcon className="w-4 h-4" />
+        {label}
+      </Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal border-indigo-200",
+              !selected && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {selected ? format(selected, "PPP") : `Select ${label.toLowerCase()}`}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={onSelect}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\delete-project.jsx ====
+
+import React from 'react'
+import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from './ui/dialog'
+import { useProjects } from './ProjectContext'
+import { AlertTriangle } from 'lucide-react'
+
+export function DeleteProject({ project, onClose }) {
+  const { deleteProject } = useProjects()
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project')
+      }
+
+      deleteProject(project.id)
+      onClose?.()
+    } catch (error) {
+      console.error('Error deleting project:', error)
+    }
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <div className="flex items-center gap-4">
+            <div className="p-2 rounded-full bg-red-100">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl">Delete Project</DialogTitle>
+              <DialogDescription className="text-gray-500 mt-1">
+                This action cannot be undone.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="py-6">
+          <p className="text-gray-700">
+            Are you sure you want to delete <span className="font-semibold">{project.name}</span>? 
+            All project data including tasks, files, and comments will be permanently removed.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="border-gray-200"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete Project
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+==== h:\project3\src\components\edit-project.jsx ====
+
+import React, { useState } from 'react'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Textarea } from './ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import {
+  Calendar as CalendarIcon,
+  ChevronRight,
+  Users,
+  Tag,
+  Lock,
+  Briefcase,
+  DollarSign,
+  Layout,
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { Calendar } from './ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { cn } from '../lib/utils'
+import { useProjects } from './ProjectContext'
+
+export function EditProject({ project, onClose }) {
+  const { updateProject } = useProjects()
+  const [startDate, setStartDate] = useState(project?.started ? new Date(project.started) : null)
+  const [deadline, setDeadline] = useState(project?.deadline ? new Date(project.deadline) : null)
+  const [error, setError] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
+
+    try {
+      const formData = new FormData(e.target)
+      const updatedProjectData = {
+        id: project.id,
+        name: formData.get('title'),
+        description: formData.get('overview'),
+        privacy: formData.get('privacy') || '',
+        team: formData.get('team') || '',
+        assignees: formData.get('assignees') ? [formData.get('assignees')] : [],
+        projectLead: formData.get('lead') || '',
+        started: startDate ? format(startDate, 'yyyy-MM-dd') : null,
+        deadline: deadline ? format(deadline, 'yyyy-MM-dd') : null,
+        client: formData.get('client') || '',
+        budget: parseFloat(formData.get('budget')) || 0,
+        tags: formData.get('tags') || '',
+        defaultTaskView: formData.get('taskView') || 'list',
+        status: formData.get('status') || 'ONGOING',
+        progress: parseFloat(formData.get('progress')) || 0,
+      }
+
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProjectData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update project')
+      }
+
+      const updatedProject = await response.json()
+      await updateProject(updatedProject)
+      
+      if (onClose) {
+        onClose(updatedProject)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!project) return null
+
+  return (
+    <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose?.()}>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto bg-gradient-to-br from-blue-50 to-indigo-50">
+        <DialogHeader className="space-y-4">
+          <nav className="flex items-center space-x-2 text-sm">
+            <span className="text-blue-600 cursor-pointer hover:underline">Projects</span>
+            <ChevronRight className="h-4 w-4 text-blue-400" />
+            <span className="text-indigo-600 font-medium">Edit Project</span>
+          </nav>
+          <DialogTitle className="text-3xl font-bold text-indigo-900">
+            Edit {project.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error: </strong>
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-8 mt-6">
+          <FormField
+            icon={<Briefcase className="w-4 h-4" />}
+            label="Project Title"
+            name="title"
+            defaultValue={project.name}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FormSelect
+              icon={<Lock className="w-4 h-4" />}
+              label="Project Privacy"
+              name="privacy"
+              defaultValue={project.privacy}
+              options={[
+                { value: 'public', label: 'Public' },
+                { value: 'private', label: 'Private' },
+                { value: 'team', label: 'Team Only' },
+              ]}
+            />
+
+            <FormSelect
+              icon={<Users className="w-4 h-4" />}
+              label="Team"
+              name="team"
+              defaultValue={project.team}
+              options={[
+                { value: 'design', label: 'Design Team' },
+                { value: 'development', label: 'Development Team' },
+                { value: 'marketing', label: 'Marketing Team' },
+              ]}
+            />
+
+            <FormSelect
+              icon={<Users className="w-4 h-4" />}
+              label="Project Lead"
+              name="lead"
+              defaultValue={project.projectLead}
+              options={[
+                { value: 'admin1', label: 'Admin 1' },
+                { value: 'admin2', label: 'Admin 2' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DatePicker
+              label="Start Date"
+              selected={startDate}
+              onSelect={setStartDate}
+            />
+            <DatePicker
+              label="Deadline"
+              selected={deadline}
+              onSelect={setDeadline}
+            />
+          </div>
+
+          <FormTextarea
+            icon={<Briefcase className="w-4 h-4" />}
+            label="Project Overview"
+            name="overview"
+            defaultValue={project.description}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormSelect
+              icon={<Briefcase className="w-4 h-4" />}
+              label="Client"
+              name="client"
+              defaultValue={project.client}
+              options={[
+                { value: 'client1', label: 'Client 1' },
+                { value: 'client2', label: 'Client 2' },
+                { value: 'client3', label: 'Client 3' },
+              ]}
+            />
+
+            <FormField
+              icon={<DollarSign className="w-4 h-4" />}
+              label="Budget"
+              name="budget"
+              type="number"
+              defaultValue={project.budget}
+            />
+          </div>
+
+          <FormSelect
+            icon={<Tag className="w-4 h-4" />}
+            label="Tags"
+            name="tags"
+            defaultValue={project.tags}
+            options={[
+              { value: 'tag1', label: 'Tag 1' },
+              { value: 'tag2', label: 'Tag 2' },
+              { value: 'tag3', label: 'Tag 3' },
+            ]}
+          />
+
+          <FormSelect
+            icon={<Layout className="w-4 h-4" />}
+            label="Default Task View"
+            name="taskView"
+            defaultValue={project.defaultTaskView}
+            options={[
+              { value: 'list', label: 'List View' },
+              { value: 'board', label: 'Board View' },
+              { value: 'calendar', label: 'Calendar View' },
+            ]}
+          />
+
+          <FormSelect
+            icon={<Briefcase className="w-4 h-4" />}
+            label="Project Status"
+            name="status"
+            defaultValue={project.status}
+            options={[
+              { value: 'ONGOING', label: 'Ongoing' },
+              { value: 'COMPLETED', label: 'Completed' },
+              { value: 'CANCELLED', label: 'Cancelled' },
+            ]}
+          />
+
+          <FormField
+            icon={<Briefcase className="w-4 h-4" />}
+            label="Project Progress"
+            name="progress"
+            type="number"
+            min="0"
+            max="100"
+            defaultValue={project.progress}
+          />
+
+          <div className="flex justify-end space-x-4 pt-6">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={onClose}
+              className="text-indigo-600 hover:text-indigo-800 border-indigo-200 hover:border-indigo-400"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Updating...' : 'Update Project'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function FormField({ icon, label, name, type = 'text', defaultValue = '', ...props }) {
+  return (
+    <div className="space-y-2">
+      <Label
+        htmlFor={name}
+        className="text-sm font-medium text-indigo-700 flex items-center gap-2"
+      >
+        {icon}
+        {label}
+      </Label>
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        defaultValue={defaultValue}
+        className="w-full border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+        {...props}
+      />
+    </div>
+  )
+}
+
+function FormSelect({ icon, label, name, options, defaultValue = '' }) {
+  return (
+    <div className="space-y-2">
+      <Label
+        htmlFor={name}
+        className="text-sm font-medium text-indigo-700 flex items-center gap-2"
+      >
+        {icon}
+        {label}
+      </Label>
+      <Select name={name} defaultValue={defaultValue}>
+        <SelectTrigger id={name} className="w-full border-indigo-200">
+          <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(({ value, label }) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function FormTextarea({ icon, label, name, defaultValue = '' }) {
+  return (
+    <div className="space-y-2">
+      <Label
+        htmlFor={name}
+        className="text-sm font-medium text-indigo-700 flex items-center gap-2"
+      >
+        {icon}
+        {label}
+      </Label>
+      <Textarea
+        id={name}
+        name={name}
+        defaultValue={defaultValue}
+        className="w-full min-h-[120px] border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500"
+      />
+    </div>
+  )
+}
+
+function DatePicker({ label, selected, onSelect }) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-indigo-700 flex items-center gap-2">
+        <CalendarIcon className="w-4 h-4" />
+        {label}
+      </Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal border-indigo-200",
+              !selected && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {selected ? format(selected, "PPP") : `Select ${label.toLowerCase()}`}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selected}
+            onSelect={onSelect}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\layout\Header.jsx ====
+
+import React from 'react'
+import { Bell, Search, User, Moon, Sun } from 'lucide-react'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
+import { useTheme } from '../ThemeProvider'
+
+export function Header() {
+  const { theme, toggleTheme } = useTheme()
+
+  return (
+    <header className="h-16 border-b border-border bg-background px-6 flex items-center justify-between transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search projects..."
+            className="pl-9 pr-4 py-2"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={toggleTheme}
+          className="text-foreground hover:text-foreground/80"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-foreground hover:text-foreground/80"
+        >
+          <Bell className="h-5 w-5" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-foreground hover:text-foreground/80"
+        >
+          <User className="h-5 w-5" />
+        </Button>
+      </div>
+    </header>
+  )
+}
+
+
+==== h:\project3\src\components\layout\MainLayout.jsx ====
+
+import React, { useState } from 'react'
+import { Sidebar } from './Sidebar'
+import { Header } from './Header'
+import { HomePage } from '../../pages/home'
+import { ProjectListView } from '../project-list-view'
+import { ProjectCardView } from '../project-card-view'
+import { ProjectBoardView } from '../project-board'
+import { TodoList } from '../todo/todo-list'
+import { ProjectDetails } from '../project-details'
+import { CreateProject } from '../create-project'
+import { TeamManagement } from '../team'
+import { WorkspaceSettings } from '../settings'
+
+export function MainLayout() {
+  const [activeView, setActiveView] = useState('home')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'home':
+        return <HomePage />
+      case 'list':
+        return <ProjectListView />
+      case 'card':
+        return <ProjectCardView />
+      case 'board':
+        return <ProjectBoardView />
+      case 'todo':
+        return <TodoList />
+      case 'details':
+        return <ProjectDetails />
+      case 'team':
+        return <TeamManagement />
+      case 'settings':
+        return <WorkspaceSettings />
+      default:
+        return <HomePage />
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex">
+      <Sidebar
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onCreateNew={() => setIsCreateModalOpen(true)}
+      />
+      <div className="flex-1 flex flex-col">
+        <Header />
+        <main className="flex-1 overflow-auto">
+          {renderContent()}
+        </main>
+      </div>
+
+      {isCreateModalOpen && (
+        <CreateProject 
+          onClose={(newProject) => {
+            setIsCreateModalOpen(false)
+            if (newProject) {
+              setActiveView('list')
+            }
+          }} 
+        />
+      )}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\layout\Sidebar.jsx ====
+
+import React from 'react'
+import { cn } from '../../lib/utils'
+import {
+  Home,
+  LayoutDashboard,
+  CheckSquare,
+  Users,
+  Settings,
+  Plus,
+} from 'lucide-react'
+import { Button } from '../ui/button'
+
+const menuItems = [
+  {
+    title: 'Home',
+    icon: Home,
+    id: 'home',
+  },
+  {
+    title: 'Create new',
+    icon: Plus,
+    id: 'create',
+  },
+  {
+    title: 'Project list view',
+    icon: CheckSquare,
+    id: 'list',
+  },
+  {
+    title: 'Project card view',
+    icon: LayoutDashboard,
+    id: 'card',
+  },
+  {
+    title: 'Project board view',
+    icon: LayoutDashboard,
+    id: 'board',
+  },
+  {
+    title: 'Todo list',
+    icon: CheckSquare,
+    id: 'todo',
+  },
+  {
+    title: 'Team',
+    icon: Users,
+    id: 'team',
+  },
+  {
+    title: 'Settings',
+    icon: Settings,
+    id: 'settings',
+  },
+]
+
+export function Sidebar({ activeView, onViewChange, onCreateNew }) {
+  return (
+    <aside className="w-64 border-r border-border bg-background transition-colors">
+      <div className="p-4">
+        <h1 className="text-xl font-bold text-primary mb-6">Project Hub</h1>
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <Button
+              key={item.id}
+              variant="ghost"
+              className={cn(
+                "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent",
+                activeView === item.id && "bg-accent text-foreground"
+              )}
+              onClick={() => {
+                if (item.id === 'create') {
+                  onCreateNew?.()
+                } else {
+                  onViewChange?.(item.id)
+                }
+              }}
+            >
+              <item.icon className="h-5 w-5 mr-3" />
+              {item.title}
+            </Button>
+          ))}
+        </nav>
+      </div>
+    </aside>
+  )
+}
+
+
+==== h:\project3\src\components\login-form.jsx ====
+
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { useProjects } from './ProjectContext';
+
+export function LoginForm() {
+  const { login } = useProjects();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await login(username, password);
+  };
+
+  return (
+    <Dialog open={true}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Login</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="w-full">Login</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
+==== h:\project3\src\components\project-board\index.jsx ====
+
+import React, { useState } from 'react'
+import { useProjects } from '../ProjectContext'
+import { ProjectHeader } from './project-header'
+import { ProjectFilters } from './project-filters'
+import { ProjectSearch } from './project-search'
+import { ProjectGrid } from './project-grid'
+import { EditProject } from '../edit-project'
+import { DeleteProject } from '../delete-project'
+import ProjectModal from '../../modals/ProjectModal'
+
+function generateUniqueId() {
+  return '_' + Math.random().toString(36).substr(2, 9)
+}
+
+export function ProjectBoardView() {
+  const { projects, addProject, loading, error } = useProjects()
+  const [activeFilter, setActiveFilter] = useState("All")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [deleteProject, setDeleteProject] = useState(null)
+
+  const handleAddProject = () => {
+    addProject({
+      id: generateUniqueId(),
+      name: "New Project",
+      status: "ONGOING",
+      image: "/default_card.webp",
+    })
+  }
+
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+    const matchesFilter =
+      activeFilter === "All" || project.status === activeFilter.toUpperCase()
+    return matchesSearch && matchesFilter
+  })
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+
+  return (
+    <div className="p-6">
+      <ProjectHeader
+        projectCount={projects.length}
+        onAddProject={handleAddProject}
+      />
+
+      <ProjectFilters
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        projects={projects}
+      />
+
+      <ProjectSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
+
+      <ProjectGrid
+        projects={filteredProjects}
+        onProjectSelect={(project) => {
+          setSelectedProject(project)
+          setModalOpen(true)
+        }}
+      />
+
+      {modalOpen && (
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+
+      {selectedProject && (
+        <EditProject
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
+
+      {deleteProject && (
+        <DeleteProject
+          project={deleteProject}
+          onClose={() => setDeleteProject(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-board\project-card.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+import { MoreHorizontal } from 'lucide-react'
+
+export function ProjectCard({ project, onProjectSelect }) {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "COMPLETED": return "bg-green-500/10 text-green-500"
+      case "ONGOING": return "bg-blue-500/10 text-blue-500"
+      case "INACTIVE": return "bg-orange-500/10 text-orange-500"
+      case "CRITICAL": return "bg-red-500/10 text-red-500"
+      case "CANCELLED": return "bg-gray-500/10 text-gray-500"
+      default: return "bg-gray-500/10 text-gray-500"
+    }
+  }
+
+  return (
+    <div className="relative h-56 rounded-lg overflow-hidden shadow-lg group bg-gray-100">
+      <img
+        src={project.image || "/default_card.webp"}
+        alt={project.name}
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60">
+        <div className="absolute top-2 right-2 flex items-center space-x-2">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+            {project.status}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            onClick={() => onProjectSelect(project)}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="absolute bottom-4 left-4 right-4">
+          <h3 className="text-lg font-semibold text-white">{project.name}</h3>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-board\project-filters.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+
+export function ProjectFilters({ activeFilter, setActiveFilter, projects }) {
+  const filters = [
+    { name: "All", count: projects.length },
+    { name: "Ongoing", count: projects.filter(p => p.status === "ONGOING").length },
+    { name: "Cancelled", count: projects.filter(p => p.status === "CANCELLED").length },
+    { name: "Completed", count: projects.filter(p => p.status === "COMPLETED").length },
+    { name: "Critical", count: projects.filter(p => p.status === "CRITICAL").length },
+  ]
+
+  return (
+    <div className="flex space-x-4 mb-6">
+      {filters.map(filter => (
+        <Button
+          key={filter.name}
+          variant="ghost"
+          className={activeFilter === filter.name ? "text-blue-500" : ""}
+          onClick={() => setActiveFilter(filter.name)}
+        >
+          {filter.name} ({filter.count})
+        </Button>
+      ))}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-board\project-grid.jsx ====
+
+import React from 'react'
+import { ProjectCard } from './project-card'
+
+export function ProjectGrid({ projects, onProjectSelect }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {projects.map((project) => (
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onProjectSelect={onProjectSelect}
+        />
+      ))}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-board\project-header.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Search, LayoutList, LayoutGrid, Kanban } from 'lucide-react'
+
+export function ProjectHeader({ 
+  projectCount, 
+  searchTerm, 
+  onSearchChange, 
+  onAddProject 
+}) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="text-2xl font-bold">Projects ({projectCount})</h1>
+      </div>
+      <Button
+        className="bg-blue-500 hover:bg-blue-600 text-white"
+        onClick={onAddProject}
+      >
+        + Add new project
+      </Button>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-board\project-search.jsx ====
+
+import React from 'react'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
+import { Search, LayoutList, LayoutGrid, Kanban } from 'lucide-react'
+
+export function ProjectSearch({ searchTerm, onSearchChange }) {
+  return (
+    <div className="flex justify-between items-center mb-6">
+      <div className="relative w-64">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search projects"
+          className="pl-8"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outline" size="icon">
+          <LayoutList className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon">
+          <LayoutGrid className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon">
+          <Kanban className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-board-view.jsx ====
+
+import React, { useState } from 'react'
+import { useProjects } from './ProjectContext'
+import { ProjectHeader } from './project-board/project-header'
+import { ProjectFilters } from './project-board/project-filters'
+import { ProjectSearch } from './project-board/project-search'
+import { ProjectGrid } from './project-board/project-grid'
+import { EditProject } from './edit-project'
+import { DeleteProject } from './delete-project'
+import ProjectModal from '../modals/ProjectModal'
+
+function generateUniqueId() {
+  return '_' + Math.random().toString(36).substr(2, 9)
+}
+
+export default function ProjectBoardView() {
+  const { projects, addProject, loading, error } = useProjects()
+  const [activeFilter, setActiveFilter] = useState("All")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [deleteProject, setDeleteProject] = useState(null)
+
+  const handleAddProject = () => {
+    addProject({
+      id: generateUniqueId(),
+      name: "New Project",
+      status: "ONGOING",
+      image: "/default_card.webp",
+    })
+  }
+
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+    const matchesFilter =
+      activeFilter === "All" || project.status === activeFilter.toUpperCase()
+    return matchesSearch && matchesFilter
+  })
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+
+  return (
+    <div className="p-6">
+      <ProjectHeader
+        projectCount={projects.length}
+        onAddProject={handleAddProject}
+      />
+
+      <ProjectFilters
+        activeFilter={activeFilter}
+        setActiveFilter={setActiveFilter}
+        projects={projects}
+      />
+
+      <ProjectSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
+
+      <ProjectGrid
+        projects={filteredProjects}
+        onProjectSelect={(project) => {
+          setSelectedProject(project)
+          setModalOpen(true)
+        }}
+      />
+
+      {modalOpen && (
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+
+      {selectedProject && (
+        <EditProject
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
+
+      {deleteProject && (
+        <DeleteProject
+          project={deleteProject}
+          onClose={() => setDeleteProject(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-card-view.jsx ====
+
+import React, { useState } from 'react'
+import { useProjects } from './ProjectContext'
+import { Card } from './ui/card'
+import { Button } from './ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import { Progress } from './ui/progress'
+import { Badge } from './ui/badge'
+import { Input } from './ui/input'
+import { Plus, Search, LayoutGrid, LayoutList, Table } from 'lucide-react'
+import { format } from 'date-fns'
+
+export function ProjectCardView() {
+  const { projects } = useProjects()
+  const [filter, setFilter] = useState('All')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const getStatusColor = (status) => {
+    const colors = {
+      COMPLETED: "bg-green-100 text-green-600",
+      ONGOING: "bg-blue-100 text-blue-600",
+      CANCELLED: "bg-gray-100 text-gray-600",
+      CRITICAL: "bg-red-100 text-red-600",
+      INACTIVE: "bg-orange-100 text-orange-600"
+    }
+    return colors[status] || "bg-gray-100 text-gray-600"
+  }
+
+  const getProgressColor = (status) => {
+    const colors = {
+      COMPLETED: "bg-green-500",
+      ONGOING: "bg-blue-500",
+      CANCELLED: "bg-gray-500",
+      CRITICAL: "bg-red-500",
+      INACTIVE: "bg-orange-500"
+    }
+    return colors[status] || "bg-gray-500"
+  }
+
+  const filters = [
+    { name: 'All', count: projects.length },
+    { name: 'Ongoing', count: projects.filter(p => p.status === 'ONGOING').length },
+    { name: 'Cancelled', count: projects.filter(p => p.status === 'CANCELLED').length },
+    { name: 'Completed', count: projects.filter(p => p.status === 'COMPLETED').length },
+    { name: 'Critical', count: projects.filter(p => p.status === 'CRITICAL').length }
+  ]
+
+  const filteredProjects = projects.filter(project => {
+    const matchesFilter = filter === 'All' || project.status.toUpperCase() === filter.toUpperCase()
+    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesFilter && matchesSearch
+  })
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">Projects</h1>
+          <span className="text-gray-500">({projects.length})</span>
+        </div>
+        <Button className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Add new project
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-4">
+          {filters.map(({ name, count }) => (
+            <button
+              key={name}
+              onClick={() => setFilter(name)}
+              className={`text-sm ${
+                filter === name
+                  ? 'text-blue-600 font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {name} ({count})
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search projects..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-1">
+            <Button variant="outline" size="icon">
+              <LayoutList className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Table className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Project Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredProjects.map((project) => (
+          <Card key={project.id} className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-medium text-lg">{project.name}</h3>
+              <Badge className={getStatusColor(project.status)}>
+                {project.status}
+              </Badge>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Client:</span>
+                <span className="text-blue-600">{project.client}</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Budget:</span>
+                <span>${project.budget?.toLocaleString()}</span>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Progress</span>
+                  <span>{project.progress}%</span>
+                </div>
+                <Progress 
+                  value={project.progress} 
+                  className="h-2"
+                  className2={getProgressColor(project.status)}
+                />
+              </div>
+
+              <div className="text-sm text-gray-600 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span>Started:</span>
+                  <span>{format(new Date(project.started), 'MMM d, yyyy')}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Deadline:</span>
+                  <span>{format(new Date(project.deadline), 'MMM d, yyyy')}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex -space-x-2">
+                  {project.assignees?.slice(0, 3).map((assignee, index) => (
+                    <Avatar key={index} className="border-2 border-white">
+                      <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                      <AvatarFallback>{assignee.name[0]}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {project.assignees?.length > 3 && (
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-600 border-2 border-white">
+                      +{project.assignees.length - 3}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>{project.tasks?.length || 0}</span>
+                  <span>Tasks</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\index.jsx ====
+
+import React from 'react'
+import { useProjects } from '../ProjectContext'
+import { Badge } from '../ui/badge'
+import { Card, CardContent } from '../ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Progress } from '../ui/progress'
+import { format } from 'date-fns'
+import {
+  DollarSign,
+  Users,
+  Globe,
+  Clock,
+  Paperclip,
+} from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
+
+const chartData = [
+  { date: '01 May', completed: 4, target: 3 },
+  { date: '05 May', completed: 4, target: 3 },
+  { date: '10 May', completed: 7, target: 5 },
+  { date: '15 May', completed: 5, target: 6 },
+  { date: '20 May', completed: 8, target: 7 },
+  { date: '25 May', completed: 6, target: 7 },
+  { date: '30 May', completed: 7, target: 6 },
+]
+
+export function ProjectDetails({ projectId }) {
+  const { projects } = useProjects()
+  const project = projects.find(p => p.id === projectId) || projects[0]
+
+  if (!project) {
+    return <div>No project found</div>
+  }
+
+  return (
+    <div className="p-6 max-w-[1400px] mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-2">
+          <h1 className="text-3xl font-bold">{project.name}</h1>
+          <Badge className="bg-blue-100 text-blue-600">
+            {project.status}
+          </Badge>
+          <Badge variant="outline" className="ml-auto">
+            Public project
+          </Badge>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <Globe className="h-4 w-4" />
+          <span>Client:</span>
+          <span className="text-blue-600">{project.client}</span>
+          <span className="mx-2">•</span>
+          <DollarSign className="h-4 w-4" />
+          <span>Budget: ${project.budget?.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Task Progress Chart */}
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Task completed over time</h2>
+            <select className="text-sm border rounded-md px-2 py-1">
+              <option>Mar 1 - 31, 2022</option>
+            </select>
+          </div>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#666', fontSize: 12 }}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#666', fontSize: 12 }}
+                />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="completed"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="target"
+                  stroke="#E5E7EB"
+                  strokeWidth={2}
+                  dot={false}
+                  strokeDasharray="5 5"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Work Loads and Team Members */}
+      <div className="grid grid-cols-2 gap-8 mb-8">
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Work loads</h2>
+            <p className="text-sm text-gray-500 mb-4">Last 7 days</p>
+            <div className="space-y-4">
+              {project.assignees?.map((assignee, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={assignee.avatar} alt={assignee.name} />
+                    <AvatarFallback>{assignee.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>{assignee.name}</span>
+                      <span>72%</span>
+                    </div>
+                    <Progress value={72} className="h-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Team members</h2>
+            <div className="flex -space-x-2 mb-6">
+              {project.assignees?.map((member, index) => (
+                <Avatar key={index} className="border-2 border-white">
+                  <AvatarImage src={member.avatar} alt={member.name} />
+                  <AvatarFallback>{member.name[0]}</AvatarFallback>
+                </Avatar>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {['UNUSED_BRAIN', 'MACHINE', 'CODING', 'MESEEKS', 'SMITHPEOPLE'].map((tag) => (
+                  <Badge key={tag} variant="secondary" className="bg-gray-100">
+                    {tag.toLowerCase()}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Project Overview */}
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Project overview</h2>
+          <p className="text-gray-600 mb-4">{project.description}</p>
+          <div className="flex items-center gap-2 text-sm">
+            <Paperclip className="h-4 w-4 text-gray-400" />
+            <span>Files:</span>
+            <span>{project.files?.length || 0}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-chart.jsx ====
+
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
+
+export function ProjectChart({ data }) {
+  return (
+    <Card className="bg-white">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Tâches complétées au fil du temps</CardTitle>
+          <p className="text-sm text-gray-500">
+            Travail effectué sur ce projet
+          </p>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#666", fontSize: 12 }}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#666", fontSize: 12 }}
+              />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="completedTasks"
+                name="Tâches complétées"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-header.jsx ====
+
+import React from 'react'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { MoreHorizontal } from 'lucide-react'
+
+export function ProjectHeader({ project }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold">{project.name}</h1>
+        <Badge
+          variant="secondary"
+          className="bg-[#E1EFFE] text-[#3B82F6] font-normal"
+        >
+          {project.status || "Statut indéfini"}
+        </Badge>
+      </div>
+      <Button variant="ghost" size="icon">
+        <MoreHorizontal className="h-5 w-5" />
+      </Button>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-info.jsx ====
+
+import React from 'react'
+import { format, parseISO } from 'date-fns'
+import { Globe, Users, DollarSign, CalendarIcon, Clock } from 'lucide-react'
+
+export function ProjectInfo({ project }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-gray-400" />
+          <span className="text-sm text-gray-500">
+            {project.type || "Type non défini"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Users className="h-4 w-4 text-gray-400" />
+          <span className="text-gray-500">Client :</span>
+          <span className="text-[#3B82F6]">
+            {project.client || "Client indéfini"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <DollarSign className="h-4 w-4 text-gray-400" />
+          <span className="text-gray-500">Budget :</span>
+          <span>
+            {project.budget
+              ? `$${project.budget.toLocaleString()}`
+              : "N/A"}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="flex items-center gap-2 text-sm">
+          <CalendarIcon className="h-4 w-4 text-gray-400" />
+          <span className="text-gray-500">Démarré :</span>
+          <span>
+            {project.started
+              ? format(parseISO(project.started), "dd MMM, yyyy")
+              : "N/A"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Clock className="h-4 w-4 text-gray-400" />
+          <span className="text-gray-500">Deadline :</span>
+          <span>
+            {project.deadline
+              ? format(parseISO(project.deadline), "dd MMM, yyyy")
+              : "N/A"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-gray-500">Progression :</span>
+          <span className="text-[#F97316]">
+            {project.progress || "0%"}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-overview.jsx ====
+
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Paperclip } from 'lucide-react'
+
+export function ProjectOverview({ project }) {
+  return (
+    <Card className="bg-white">
+      <CardHeader>
+        <CardTitle>Aperçu du projet</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-gray-600">{project.overview}</p>
+        <div className="flex items-center gap-2 text-sm">
+          <Paperclip className="h-4 w-4 text-gray-400" />
+          <span>Pièces jointes :</span>
+          <span>{project.attachments?.length || 0}</span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-tags.jsx ====
+
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Badge } from '../ui/badge'
+
+export function ProjectTags({ tags }) {
+  const tagsArray = Array.isArray(tags)
+    ? tags
+    : typeof tags === 'string'
+    ? tags.split(',').map(tag => tag.trim())
+    : []
+
+  return (
+    <Card className="bg-white">
+      <CardHeader>
+        <CardTitle>Tags</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {tagsArray.length > 0 ? (
+            tagsArray.map((tag, index) => (
+              <Badge
+                key={index}
+                variant="secondary"
+                className="bg-gray-100 text-gray-800 font-normal"
+              >
+                {tag}
+              </Badge>
+            ))
+          ) : (
+            <span className="text-gray-500">Aucun tag disponible</span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-tasks.jsx ====
+
+import React from 'react'
+import { format } from 'date-fns'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { CheckSquare, MoreHorizontal } from 'lucide-react'
+
+export function ProjectTasks({ tasks }) {
+  return (
+    <Card className="bg-white">
+      <CardHeader className="flex items-center justify-between">
+        <CardTitle>Project Tasks</CardTitle>
+        <Button variant="ghost" size="icon">
+          <MoreHorizontal className="h-5 w-5" />
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {tasks.length > 0 ? (
+          <ul className="space-y-4">
+            {tasks.map((task) => (
+              <li
+                key={task.id}
+                className="flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-700 font-medium">
+                    {task.title}
+                  </span>
+                  {task.status && (
+                    <Badge
+                      variant="secondary"
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        task.status === "DRAFT"
+                          ? "bg-blue-100 text-blue-700"
+                          : task.status === "URGENT"
+                          ? "bg-orange-100 text-orange-700"
+                          : task.status === "ON PROCESS"
+                          ? "bg-cyan-100 text-cyan-700"
+                          : task.status === "CLOSE"
+                          ? "bg-gray-100 text-gray-700"
+                          : ""
+                      }`}
+                    >
+                      {task.status}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>
+                    {task.date
+                      ? format(new Date(task.date), "dd MMM, yyyy")
+                      : ""}
+                  </span>
+                  <span>{task.time || ""}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500">No tasks for this project.</p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\project-team.jsx ====
+
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+
+export function ProjectTeam({ assignees }) {
+  return (
+    <Card className="bg-white">
+      <CardHeader>
+        <CardTitle>Team Members</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex -space-x-2">
+          {assignees && assignees.length > 0 ? (
+            assignees.map((assignee, index) => (
+              <Avatar key={index} className="border-2 border-white">
+                {assignee.avatar ? (
+                  <AvatarImage
+                    src={assignee.avatar}
+                    alt={assignee.name}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                    {assignee.name ? assignee.name[0] : "?"}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            ))
+          ) : (
+            <p className="text-gray-500">No team members assigned.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+==== h:\project3\src\components\project-details\utils.js ====
+
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
+
+export function generateChartData(tasks) {
+  function isValidDate(dateString) {
+    const date = new Date(dateString)
+    return !isNaN(date.getTime())
+  }
+
+  const taskCountsByDate = tasks.reduce((acc, task) => {
+    if (isValidDate(task.date)) {
+      const dateKey = format(new Date(task.date), "yyyy-MM-dd")
+      if (!acc[dateKey]) {
+        acc[dateKey] = 0
+      }
+      if (task.status === "CLOSE") {
+        acc[dateKey] += 1
+      }
+    }
+    return acc
+  }, {})
+
+  const today = new Date()
+  const startDate = startOfMonth(today)
+  const endDate = endOfMonth(today)
+
+  const dates = eachDayOfInterval({
+    start: startDate,
+    end: endDate,
+  })
+
+  return dates.map((date) => {
+    const dateKey = format(date, "yyyy-MM-dd")
+    return {
+      date: format(date, "dd MMM"),
+      completedTasks: taskCountsByDate[dateKey] || 0,
+    }
+  })
+}
+
+
+==== h:\project3\src\components\project-list\project-filters.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+
+export function ProjectFilters({ currentFilter, onFilterChange, filters }) {
+  return (
+    <div className="flex items-center gap-6">
+      {filters.map((filter) => (
+        <Button
+          key={filter.name}
+          variant="ghost"
+          onClick={() => onFilterChange(filter.name)}
+          className={`${
+            currentFilter === filter.name
+              ? "text-blue-600 font-medium"
+              : "text-gray-500 hover:text-blue-600"
+          } transition-colors`}
+        >
+          {filter.name} ({filter.count})
+        </Button>
+      ))}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-list\project-header.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+import { ProjectSearch } from './project-search'
+import { LayoutGrid, List, Kanban } from 'lucide-react'
+
+export function ProjectHeader({ searchTerm, onSearchChange, onViewChange }) {
+  return (
+    <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center gap-4">
+        <h1 className="text-2xl font-bold">Projects</h1>
+        <ProjectSearch value={searchTerm} onChange={onSearchChange} />
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => onViewChange('list')}>
+            <List className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => onViewChange('board')}>
+            <Kanban className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => onViewChange('grid')}>
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+          + Add new project
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-list\project-pagination.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+
+export function ProjectPagination({ 
+  currentPage, 
+  itemsPerPage, 
+  totalItems, 
+  onPageChange 
+}) {
+  return (
+    <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+      <span>
+        {`${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(
+          currentPage * itemsPerPage,
+          totalItems
+        )} of ${totalItems} items`}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(currentPage - 1)}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-blue-600 text-white"
+        >
+          {currentPage}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={currentPage * itemsPerPage >= totalItems}
+          onClick={() => onPageChange(currentPage + 1)}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-list\project-search.jsx ====
+
+import React from 'react'
+import { Input } from '../ui/input'
+import { Search } from 'lucide-react'
+
+export function ProjectSearch({ value, onChange }) {
+  return (
+    <div className="relative w-[320px]">
+      <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+      <Input
+        placeholder="Search projects"
+        className="pl-9 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-list\project-table.jsx ====
+
+import React from 'react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Progress } from '../ui/progress'
+import { format, parseISO } from 'date-fns'
+
+export function ProjectTable({ projects }) {
+  const getStatusColor = (status) => {
+    const colors = {
+      COMPLETED: "bg-emerald-100 text-emerald-600",
+      INACTIVE: "bg-orange-100 text-orange-600",
+      ONGOING: "bg-blue-100 text-blue-600",
+      CRITICAL: "bg-red-100 text-red-600",
+      CANCELLED: "bg-gray-100 text-gray-600",
+    }
+    return colors[status] || ""
+  }
+
+  const getProgressColor = (status) => {
+    const colors = {
+      COMPLETED: "bg-emerald-500",
+      INACTIVE: "bg-orange-500",
+      ONGOING: "bg-blue-500",
+      CRITICAL: "bg-red-500",
+      CANCELLED: "bg-gray-500",
+    }
+    return colors[status] || "bg-gray-500"
+  }
+
+  const formatDate = (dateString) => {
+    try {
+      return format(parseISO(dateString), "MMM d, yyyy")
+    } catch (error) {
+      return dateString
+    }
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-t border-b border-gray-200">
+          <TableHead className="w-[300px] font-semibold">PROJECT NAME</TableHead>
+          <TableHead className="font-semibold">ASSIGNEES</TableHead>
+          <TableHead className="font-semibold">START DATE</TableHead>
+          <TableHead className="font-semibold">DEADLINE</TableHead>
+          <TableHead className="font-semibold">TASK</TableHead>
+          <TableHead className="font-semibold">PROGRESS</TableHead>
+          <TableHead className="font-semibold">STATUS</TableHead>
+          <TableHead></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {projects.map((project) => (
+          <TableRow key={project.id} className="hover:bg-gray-50">
+            <TableCell className="font-medium">
+              <a href="#" className="text-blue-600 hover:underline">
+                {project.name}
+              </a>
+            </TableCell>
+            <TableCell>
+              <div className="flex -space-x-2">
+                {project.assignees?.slice(0, 3).map((assignee, index) => (
+                  <Avatar
+                    key={index}
+                    className="border-2 border-white w-8 h-8"
+                  >
+                    <AvatarImage
+                      src={assignee.avatar}
+                      alt={assignee.name}
+                    />
+                    <AvatarFallback>
+                      {assignee.name ? assignee.name[0] : "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                ))}
+                {project.assignees?.length > 3 && (
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
+                    +{project.assignees.length - 3}
+                  </div>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>{formatDate(project.started)}</TableCell>
+            <TableCell>{formatDate(project.deadline)}</TableCell>
+            <TableCell>{project.taskCount || "0"}</TableCell>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                <Progress
+                  value={project.progress || 0}
+                  className="h-2 w-full bg-gray-100"
+                  indicatorClassName={getProgressColor(project.status)}
+                />
+                <span className="text-sm text-gray-600">
+                  {project.progress}%
+                </span>
+              </div>
+            </TableCell>
+            <TableCell>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                {project.status}
+              </span>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
+
+==== h:\project3\src\components\project-list-view.jsx ====
+
+import React, { useState } from 'react'
+import { useProjects } from './ProjectContext'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { LayoutGrid, LayoutList, Kanban, Search, Plus } from 'lucide-react'
+
+export function ProjectListView() {
+  const { projects, loading } = useProjects()
+  const [currentFilter, setCurrentFilter] = useState('All')
+
+  const filters = [
+    { name: 'All', count: projects.length },
+    { name: 'Ongoing', count: projects.filter(p => p.status === 'ONGOING').length },
+    { name: 'Cancelled', count: projects.filter(p => p.status === 'CANCELLED').length },
+    { name: 'Completed', count: projects.filter(p => p.status === 'COMPLETED').length },
+    { name: 'Critical', count: projects.filter(p => p.status === 'CRITICAL').length },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold text-blue-600">Project Hub</h2>
+        <Button className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Add new project
+        </Button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-4">
+            {filters.map(filter => (
+              <button
+                key={filter.name}
+                onClick={() => setCurrentFilter(filter.name)}
+                className={`text-sm ${
+                  currentFilter === filter.name
+                    ? 'text-blue-600 font-medium'
+                    : 'text-gray-500'
+                }`}
+              >
+                {filter.name} ({filter.count})
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon">
+              <LayoutList className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Kanban className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative w-full mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search projects"
+            className="pl-9 w-full"
+          />
+        </div>
+
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-3 font-medium">PROJECT NAME</th>
+              <th className="text-left py-3 font-medium">ASSIGNEES</th>
+              <th className="text-left py-3 font-medium">START DATE</th>
+              <th className="text-left py-3 font-medium">DEADLINE</th>
+              <th className="text-left py-3 font-medium">TASK</th>
+              <th className="text-left py-3 font-medium">PROGRESS</th>
+              <th className="text-left py-3 font-medium">STATUS</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="text-center py-4">Loading...</td>
+              </tr>
+            ) : projects.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="text-center py-4">No projects found</td>
+              </tr>
+            ) : (
+              projects.map(project => (
+                <tr key={project.id} className="border-b">
+                  <td className="py-4">
+                    <a href="#" className="text-blue-600 hover:underline">
+                      {project.name}
+                    </a>
+                  </td>
+                  <td className="py-4">
+                    {project.assignees?.length ? 
+                      project.assignees.map(a => a.name).join(', ') : 
+                      'No assignees'}
+                  </td>
+                  <td className="py-4">{project.started}</td>
+                  <td className="py-4">{project.deadline}</td>
+                  <td className="py-4">{project.tasks?.length || 0}</td>
+                  <td className="py-4">{project.progress}%</td>
+                  <td className="py-4">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      project.status === 'COMPLETED' ? 'bg-green-100 text-green-600' :
+                      project.status === 'ONGOING' ? 'bg-blue-100 text-blue-600' :
+                      project.status === 'CRITICAL' ? 'bg-red-100 text-red-600' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {project.status}
+                    </span>
+                  </td>
+                  <td className="py-4">
+                    <Button variant="ghost" size="sm">...</Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
+          <span>1 to {projects.length} of {projects.length} items</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled>Previous</Button>
+            <Button variant="outline" size="sm" className="bg-blue-600 text-white">1</Button>
+            <Button variant="outline" size="sm">Next</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\project-team.jsx ====
+
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+
+export function ProjectTeam({ assignees }) {
+  return (
+    <Card className="bg-white">
+      <CardHeader>
+        <CardTitle>Team Members</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex -space-x-2">
+          {assignees && assignees.length > 0 ? (
+            assignees.map((assignee, index) => (
+              <Avatar key={index} className="border-2 border-white">
+                {assignee.avatar ? (
+                  <AvatarImage
+                    src={assignee.avatar}
+                    alt={assignee.name}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                    {assignee.name ? assignee.name[0] : "?"}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            ))
+          ) : (
+            <p className="text-gray-500">No team members assigned.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+==== h:\project3\src\components\ProjectContext.jsx ====
+
+import React, { createContext, useState, useContext } from 'react'
+import { projects as initialProjects } from '../lib/mock-data'
+
+const ProjectContext = createContext()
+
+export function ProjectProvider({ children }) {
+  const [projects, setProjects] = useState(initialProjects)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const addProject = (newProject) => {
+    setProjects(prev => [...prev, { ...newProject, id: Math.random().toString(36).substr(2, 9) }])
+  }
+
+  const updateProject = (updatedProject) => {
+    setProjects(prev =>
+      prev.map(project =>
+        project.id === updatedProject.id ? updatedProject : project
+      )
+    )
+  }
+
+  const deleteProject = (projectId) => {
+    setProjects(prev => prev.filter(project => project.id !== projectId))
+  }
+
+  const value = {
+    projects,
+    loading,
+    error,
+    addProject,
+    updateProject,
+    deleteProject,
+  }
+
+  return (
+    <ProjectContext.Provider value={value}>
+      {children}
+    </ProjectContext.Provider>
+  )
+}
+
+export function useProjects() {
+  const context = useContext(ProjectContext)
+  if (!context) {
+    throw new Error('useProjects must be used within a ProjectProvider')
+  }
+  return context
+}
+
+
+==== h:\project3\src\components\settings\index.jsx ====
+
+import React, { useState } from 'react'
+import { Card } from '../ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Switch } from '../ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+import {
+  Bell,
+  Mail,
+  Users,
+  Shield,
+  Sliders,
+  Link,
+  Globe,
+  Moon,
+  Sun,
+} from 'lucide-react'
+
+export function WorkspaceSettings() {
+  const [notifications, setNotifications] = useState({
+    email: true,
+    push: true,
+    updates: false,
+  })
+  const [theme, setTheme] = useState('light')
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Workspace Settings</h1>
+
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="team">Team Management</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
+          <div className="space-y-6">
+            {/* Appearance */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Sliders className="h-5 w-5" />
+                Appearance
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Theme</Label>
+                    <p className="text-sm text-gray-500">
+                      Select your preferred theme
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={theme === 'light' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme('light')}
+                    >
+                      <Sun className="h-4 w-4 mr-1" />
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === 'dark' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTheme('dark')}
+                    >
+                      <Moon className="h-4 w-4 mr-1" />
+                      Dark
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Language</Label>
+                    <p className="text-sm text-gray-500">
+                      Choose your preferred language
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <select className="border rounded-md px-2 py-1">
+                      <option>English</option>
+                      <option>French</option>
+                      <option>German</option>
+                      <option>Spanish</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Notifications */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Bell className="h-5 w-5" />
+                Notifications
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    <div>
+                      <Label>Email Notifications</Label>
+                      <p className="text-sm text-gray-500">
+                        Receive updates via email
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={notifications.email}
+                    onCheckedChange={(checked) =>
+                      setNotifications({ ...notifications, email: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4" />
+                    <div>
+                      <Label>Push Notifications</Label>
+                      <p className="text-sm text-gray-500">
+                        Receive push notifications
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={notifications.push}
+                    onCheckedChange={(checked) =>
+                      setNotifications({ ...notifications, push: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <div>
+                      <Label>Product Updates</Label>
+                      <p className="text-sm text-gray-500">
+                        Receive product updates and announcements
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={notifications.updates}
+                    onCheckedChange={(checked) =>
+                      setNotifications({ ...notifications, updates: checked })
+                    }
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="team">
+          <div className="space-y-6">
+            {/* Team Members */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Users className="h-5 w-5" />
+                Team Members
+              </h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Input
+                    placeholder="Search members..."
+                    className="max-w-sm"
+                  />
+                  <Button>
+                    <Users className="h-4 w-4 mr-2" />
+                    Invite Member
+                  </Button>
+                </div>
+                <div className="border rounded-lg divide-y">
+                  {['John Doe', 'Jane Smith', 'Bob Wilson'].map((member) => (
+                    <div
+                      key={member}
+                      className="flex items-center justify-between p-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          {member[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium">{member}</p>
+                          <p className="text-sm text-gray-500">Team Member</p>
+                        </div>
+                      </div>
+                      <select className="border rounded-md px-2 py-1">
+                        <option>Admin</option>
+                        <option>Editor</option>
+                        <option>Viewer</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+
+            {/* Permissions */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Shield className="h-5 w-5" />
+                Permissions
+              </h2>
+              <div className="space-y-4">
+                {[
+                  {
+                    name: 'Project Creation',
+                    description: 'Who can create new projects',
+                  },
+                  {
+                    name: 'Task Management',
+                    description: 'Who can manage tasks',
+                  },
+                  {
+                    name: 'Team Invites',
+                    description: 'Who can invite new members',
+                  },
+                ].map((permission) => (
+                  <div
+                    key={permission.name}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <Label>{permission.name}</Label>
+                      <p className="text-sm text-gray-500">
+                        {permission.description}
+                      </p>
+                    </div>
+                    <select className="border rounded-md px-2 py-1">
+                      <option>All Members</option>
+                      <option>Admins Only</option>
+                      <option>Project Leads</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="integrations">
+          <div className="space-y-6">
+            {/* Available Integrations */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Link className="h-5 w-5" />
+                Available Integrations
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  {
+                    name: 'GitHub',
+                    description: 'Connect your repositories',
+                    connected: true,
+                  },
+                  {
+                    name: 'Slack',
+                    description: 'Get notifications in Slack',
+                    connected: false,
+                  },
+                  {
+                    name: 'Google Drive',
+                    description: 'Access your files',
+                    connected: true,
+                  },
+                  {
+                    name: 'Jira',
+                    description: 'Sync your issues',
+                    connected: false,
+                  },
+                ].map((integration) => (
+                  <div
+                    key={integration.name}
+                    className="border rounded-lg p-4 flex items-center justify-between"
+                  >
+                    <div>
+                      <h3 className="font-medium">{integration.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {integration.description}
+                      </p>
+                    </div>
+                    <Button
+                      variant={integration.connected ? 'outline' : 'default'}
+                    >
+                      {integration.connected ? 'Connected' : 'Connect'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* API Access */}
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Shield className="h-5 w-5" />
+                API Access
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <Label>API Key</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value="••••••••••••••••"
+                      readOnly
+                      className="font-mono"
+                    />
+                    <Button variant="outline">Regenerate</Button>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Use this key to access the API
+                  </p>
+                </div>
+                <div>
+                  <Label>Webhook URL</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      placeholder="https://your-domain.com/webhook"
+                      className="flex-1"
+                    />
+                    <Button>Save</Button>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Receive real-time updates via webhook
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\team\index.jsx ====
+
+import React, { useState } from 'react'
+import { Card } from '../ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { Badge } from '../ui/badge'
+import {
+  Users,
+  Plus,
+  Mail,
+  Phone,
+  Calendar,
+  MoreHorizontal,
+  Search,
+} from 'lucide-react'
+
+const teamMembers = [
+  {
+    id: '1',
+    name: 'John Doe',
+    role: 'Project Manager',
+    email: 'john@example.com',
+    phone: '+1 234 567 890',
+    joinDate: '2023-01-15',
+    avatar: '/default-avatar.webp',
+    projects: ['Project Alpha', 'Project Beta'],
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    role: 'Senior Developer',
+    email: 'jane@example.com',
+    phone: '+1 234 567 891',
+    joinDate: '2023-02-20',
+    avatar: '/default-avatar.webp',
+    projects: ['Project Alpha'],
+  },
+  {
+    id: '3',
+    name: 'Bob Wilson',
+    role: 'Designer',
+    email: 'bob@example.com',
+    phone: '+1 234 567 892',
+    joinDate: '2023-03-10',
+    avatar: '/default-avatar.webp',
+    projects: ['Project Beta'],
+  },
+]
+
+export function TeamManagement() {
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const filteredMembers = teamMembers.filter(member =>
+    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.role.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Team Management</h1>
+          <p className="text-muted-foreground">
+            Manage your team members and their roles
+          </p>
+        </div>
+        <Button>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Team Member
+        </Button>
+      </div>
+
+      <Card className="mb-6">
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search team members..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline">
+                Filter
+              </Button>
+              <Button variant="outline">
+                Export
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {filteredMembers.map((member) => (
+            <div key={member.id} className="p-4 hover:bg-muted/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={member.avatar} alt={member.name} />
+                    <AvatarFallback>{member.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-medium">{member.name}</h3>
+                    <p className="text-sm text-muted-foreground">{member.role}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span>{member.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{member.phone}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>Joined {new Date(member.joinDate).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex gap-1">
+                    {member.projects.map((project) => (
+                      <Badge key={project} variant="secondary">
+                        {project}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\team\team-member-modal.jsx ====
+
+import React from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+
+export function TeamMemberModal({ member, onClose, onSave }) {
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    // Handle form submission
+    onClose()
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {member ? 'Edit Team Member' : 'Add Team Member'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              defaultValue={member?.name}
+              placeholder="Enter name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="role">Role</Label>
+            <Input
+              id="role"
+              defaultValue={member?.role}
+              placeholder="Enter role"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              defaultValue={member?.email}
+              placeholder="Enter email"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              defaultValue={member?.phone}
+              placeholder="Enter phone number"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              {member ? 'Update' : 'Add'} Member
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+==== h:\project3\src\components\ThemeProvider.jsx ====
+
+import React, { createContext, useContext, useEffect, useState } from 'react'
+
+const ThemeContext = createContext()
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(() => {
+    // Check localStorage and system preference
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) return savedTheme
+    
+    // Check system preference
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark'
+    }
+    return 'light'
+  })
+
+  useEffect(() => {
+    // Update document class and localStorage
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light')
+  }
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  )
+}
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext)
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider')
+  }
+  return context
+}
+
+
+==== h:\project3\src\components\todo\add-todo-dialog.jsx ====
+
+import React, { useState, useRef } from 'react'
+import { Plus, Paperclip, Trash2 } from 'lucide-react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+  DialogClose,
+} from '../ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
+import { useProjects } from '../ProjectContext'
+
+export function AddTodoDialog({ onAdd }) {
+  const { projects } = useProjects()
+  const fileInputRef = useRef(null)
+  const [newTask, setNewTask] = useState({
+    title: "",
+    status: "DRAFT",
+    attachments: [],
+    date: "",
+    time: "",
+    reminder: "",
+    projectId: "",
+    comments: 0,
+  })
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || [])
+    setNewTask(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...files]
+    }))
+  }
+
+  const handleRemoveFile = (index) => {
+    setNewTask(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index)
+    }))
+  }
+
+  const handleSubmit = async () => {
+    if (!newTask.title.trim()) {
+      alert("Please enter a title for the task")
+      return
+    }
+
+    await onAdd(newTask)
+    setNewTask({
+      title: "",
+      status: "DRAFT",
+      attachments: [],
+      date: "",
+      time: "",
+      reminder: "",
+      projectId: "",
+      comments: 0,
+    })
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="bg-blue-500 text-white hover:bg-blue-600">
+          <Plus className="h-4 w-4 mr-2" />
+          Add new task
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] bg-gradient-to-br from-blue-50 to-indigo-50">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-blue-700 mb-4">
+            Add new task
+          </DialogTitle>
+          <DialogDescription>
+            Fill in the details below to add a new task.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-6 py-4">
+          <FormField
+            label="Title"
+            input={
+              <Input
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                className="col-span-3"
+                placeholder="Enter task title"
+              />
+            }
+          />
+
+          <FormField
+            label="Status"
+            input={
+              <Select
+                onValueChange={(value) => setNewTask({ ...newTask, status: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">DRAFT</SelectItem>
+                  <SelectItem value="URGENT">URGENT</SelectItem>
+                  <SelectItem value="ON PROCESS">ON PROCESS</SelectItem>
+                  <SelectItem value="CLOSE">CLOSE</SelectItem>
+                </SelectContent>
+              </Select>
+            }
+          />
+
+          <FormField
+            label="Project"
+            input={
+              <Select
+                onValueChange={(value) => setNewTask({ ...newTask, projectId: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
+
+          <FormField
+            label="Date"
+            input={
+              <Input
+                type="date"
+                value={newTask.date}
+                onChange={(e) => setNewTask({ ...newTask, date: e.target.value })}
+                className="col-span-3"
+              />
+            }
+          />
+
+          <FormField
+            label="Time"
+            input={
+              <Input
+                type="time"
+                value={newTask.time}
+                onChange={(e) => setNewTask({ ...newTask, time: e.target.value })}
+                className="col-span-3"
+              />
+            }
+          />
+
+          <FormField
+            label="Reminder"
+            input={
+              <Input
+                type="datetime-local"
+                value={newTask.reminder}
+                onChange={(e) => setNewTask({ ...newTask, reminder: e.target.value })}
+                className="col-span-3"
+              />
+            }
+          />
+
+          <FormField
+            label="Files"
+            input={
+              <div className="col-span-3">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  multiple
+                />
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full bg-green-100 hover:bg-green-200 text-green-600"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    Attach files
+                  </Button>
+                  {newTask.attachments.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      {newTask.attachments.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm truncate">{file.name}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 hover:bg-red-100 hover:text-red-600"
+                            onClick={() => handleRemoveFile(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            }
+          />
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <Button
+            onClick={handleSubmit}
+            className="bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Add Task
+          </Button>
+          <DialogClose asChild>
+            <Button
+              variant="outline"
+              className="ml-2 bg-red-100 hover:bg-red-200 text-red-600"
+            >
+              Cancel
+            </Button>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function FormField({ label, input }) {
+  return (
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label className="text-right font-semibold text-gray-700">{label}</Label>
+      {input}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\todo\add-todo-modal.jsx ====
+
+import React, { useState, useEffect } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
+
+export function AddTodoModal({ isOpen, onClose, onSubmit, todo }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    status: 'DRAFT',
+    date: '',
+    time: '',
+    attachments: 0,
+    comments: 0,
+  })
+
+  useEffect(() => {
+    if (todo) {
+      setFormData({
+        ...todo,
+        date: todo.date || '',
+        time: todo.time || '',
+      })
+    } else {
+      setFormData({
+        title: '',
+        status: 'DRAFT',
+        date: '',
+        time: '',
+        attachments: 0,
+        comments: 0,
+      })
+    }
+  }, [todo])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    onSubmit(todo ? { ...formData, id: todo.id } : formData)
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {todo ? 'Edit Task' : 'Add New Task'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Enter task title"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => setFormData({ ...formData, status: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="DRAFT">Draft</SelectItem>
+                <SelectItem value="URGENT">Urgent</SelectItem>
+                <SelectItem value="ON PROCESS">On Process</SelectItem>
+                <SelectItem value="CLOSE">Close</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="time">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              {todo ? 'Update' : 'Add'} Task
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+==== h:\project3\src\components\todo\todo-filters.jsx ====
+
+import React from 'react'
+import { Filter, ArrowUpDown } from 'lucide-react'
+import { Button } from '../ui/button'
+
+export function TodoFilters({ count }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <Button variant="ghost" size="sm" className="text-gray-500">
+        <Filter className="h-4 w-4 mr-1" />
+        {count} tasks
+      </Button>
+      <Button variant="ghost" size="sm" className="text-blue-500">
+        <ArrowUpDown className="h-4 w-4 mr-1" />
+        Sorting
+      </Button>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\todo\todo-item.jsx ====
+
+import React from 'react'
+import { format } from 'date-fns'
+import { Paperclip, PenSquare, Trash2 } from 'lucide-react'
+import { Button } from '../ui/button'
+import { Checkbox } from '../ui/checkbox'
+
+export function TodoItem({ todo, onUpdate, onDelete }) {
+  const getStatusClass = (status) => {
+    const classes = {
+      DRAFT: "bg-blue-100 text-blue-700",
+      URGENT: "bg-orange-100 text-orange-700",
+      "ON PROCESS": "bg-cyan-100 text-cyan-700",
+      CLOSE: "bg-gray-100 text-gray-700",
+    }
+    return classes[status] || ""
+  }
+
+  return (
+    <div className="flex items-start gap-3 py-3 px-2 hover:bg-gray-50 group border-b">
+      <Checkbox className="mt-1" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-700 font-medium">{todo.title}</span>
+          {todo.status && (
+            <span className={`text-xs px-2 py-0.5 rounded ${getStatusClass(todo.status)}`}>
+              {todo.status}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-4 text-sm text-gray-500">
+        {todo.attachments?.length > 0 && (
+          <Button variant="ghost" size="sm" className="h-auto p-0">
+            <Paperclip className="h-3.5 w-3.5 mr-1" />
+            {todo.attachments.length}
+          </Button>
+        )}
+        <span className="whitespace-nowrap">
+          {todo.date ? format(new Date(todo.date), "yyyy-MM-dd") : "Date non définie"}
+        </span>
+        <span className="border-l pl-3 whitespace-nowrap">
+          {todo.time || "Heure non définie"}
+        </span>
+        <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => onUpdate(todo)}
+          >
+            <PenSquare className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => onDelete(todo.id)}
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\todo\todo-items.jsx ====
+
+import React from 'react'
+import { TodoItem } from './todo-item'
+
+export function TodoItems({ todos, onUpdate, onDelete }) {
+  return (
+    <div className="space-y-1 mb-6">
+      {todos.map((todo) => (
+        <TodoItem
+          key={todo.id}
+          todo={todo}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\todo\todo-list.jsx ====
+
+import React, { useState } from 'react'
+import { Search, ArrowUpDown, Plus, Paperclip, MessageSquare, PenSquare, Trash2 } from 'lucide-react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Badge } from '../ui/badge'
+import { Checkbox } from '../ui/checkbox'
+import { Card } from '../ui/card'
+import { format } from 'date-fns'
+import { AddTodoModal } from './add-todo-modal'
+
+const initialTodos = [
+  {
+    id: 1,
+    title: 'Designing the dungeon',
+    status: 'DRAFT',
+    attachments: 2,
+    date: '2024-11-12',
+    time: '12:00 PM',
+    comments: 2
+  },
+  {
+    id: 2,
+    title: 'Hiring a motion graphic designer',
+    status: 'URGENT',
+    attachments: 2,
+    date: '2024-11-12',
+    time: '12:00 PM',
+    comments: 3
+  },
+  {
+    id: 3,
+    title: 'Daily Meetings Purpose, participants',
+    status: 'ON PROCESS',
+    attachments: 4,
+    date: '2024-12-12',
+    time: '05:00 AM',
+    comments: 0
+  }
+]
+
+export function TodoList() {
+  const [todos, setTodos] = useState(initialTodos)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedTodo, setSelectedTodo] = useState(null)
+
+  const getStatusColor = (status) => {
+    const colors = {
+      DRAFT: "bg-blue-100 text-blue-700",
+      URGENT: "bg-orange-100 text-orange-700",
+      "ON PROCESS": "bg-cyan-100 text-cyan-700",
+      CLOSE: "bg-gray-100 text-gray-700",
+    }
+    return colors[status] || ""
+  }
+
+  const filteredTodos = todos
+    .filter(todo => 
+      todo.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOrder === 'asc') {
+        return new Date(a.date) - new Date(b.date)
+      }
+      return new Date(b.date) - new Date(a.date)
+    })
+
+  const toggleSort = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+  }
+
+  const handleAddTodo = (newTodo) => {
+    setTodos(prev => [...prev, { ...newTodo, id: Date.now() }])
+    setIsModalOpen(false)
+  }
+
+  const handleEditTodo = (todo) => {
+    setSelectedTodo(todo)
+    setIsModalOpen(true)
+  }
+
+  const handleUpdateTodo = (updatedTodo) => {
+    setTodos(prev => prev.map(todo => 
+      todo.id === updatedTodo.id ? updatedTodo : todo
+    ))
+    setIsModalOpen(false)
+    setSelectedTodo(null)
+  }
+
+  const handleDeleteTodo = (id) => {
+    setTodos(prev => prev.filter(todo => todo.id !== id))
+  }
+
+  return (
+    <div className="p-6 max-w-[1200px] mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">
+          Todo list
+          <span className="text-gray-500 font-normal ml-2">
+            ({todos.length})
+          </span>
+        </h1>
+      </div>
+
+      <Card className="mb-6">
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={toggleSort}>
+                <ArrowUpDown className="h-4 w-4 mr-1" />
+                Sorting
+              </Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  setSelectedTodo(null)
+                  setIsModalOpen(true)
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add new task
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="divide-y">
+          {filteredTodos.map((todo) => (
+            <div key={todo.id} className="p-4 hover:bg-gray-50 group">
+              <div className="flex items-center gap-4">
+                <Checkbox />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-900 font-medium">{todo.title}</span>
+                    <Badge className={getStatusColor(todo.status)}>
+                      {todo.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  {todo.attachments > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Paperclip className="h-4 w-4" />
+                      <span>{todo.attachments}</span>
+                    </div>
+                  )}
+                  {todo.comments > 0 && (
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{todo.comments}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <span>{format(new Date(todo.date), 'dd MMM, yyyy')}</span>
+                    <span className="text-gray-300">|</span>
+                    <span>{todo.time}</span>
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEditTodo(todo)}
+                    >
+                      <PenSquare className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-600"
+                      onClick={() => handleDeleteTodo(todo.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <AddTodoModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedTodo(null)
+        }}
+        onSubmit={selectedTodo ? handleUpdateTodo : handleAddTodo}
+        todo={selectedTodo}
+      />
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\todo\todo-search.jsx ====
+
+import React from 'react'
+import { Search } from 'lucide-react'
+import { Input } from '../ui/input'
+
+export function TodoSearch({ value, onChange }) {
+  return (
+    <div className="flex-1 min-w-[240px]">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          type="search"
+          placeholder="Search tasks"
+          className="pl-9 bg-white"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\todo\use-todos.jsx ====
+
+import { useState } from 'react'
+import { tasks as initialTasks } from '../../lib/mock-data'
+
+export function useTodos() {
+  const [todos, setTodos] = useState(initialTasks)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const addTodo = async (newTodo) => {
+    try {
+      const todo = {
+        id: Math.random().toString(36).substr(2, 9),
+        ...newTodo
+      }
+      setTodos(prev => [...prev, todo])
+      return todo
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  const updateTodo = async (todo) => {
+    try {
+      setTodos(prev => prev.map(t => t.id === todo.id ? todo : t))
+      return todo
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  const deleteTodo = async (id) => {
+    try {
+      setTodos(prev => prev.filter(t => t.id !== id))
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  return {
+    todos,
+    loading,
+    error,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+  }
+}
+
+
+==== h:\project3\src\components\ui\avatar.jsx ====
+
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import { cn } from "../../lib/utils"
+
+const Avatar = React.forwardRef(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
+      className
+    )}
+    {...props}
+  />
+))
+Avatar.displayName = AvatarPrimitive.Root.displayName
+
+const AvatarImage = React.forwardRef(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Image
+    ref={ref}
+    className={cn("aspect-square h-full w-full", className)}
+    {...props}
+  />
+))
+AvatarImage.displayName = AvatarPrimitive.Image.displayName
+
+const AvatarFallback = React.forwardRef(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Fallback
+    ref={ref}
+    className={cn(
+      "flex h-full w-full items-center justify-center rounded-full bg-muted",
+      className
+    )}
+    {...props}
+  />
+))
+AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
+
+export { Avatar, AvatarImage, AvatarFallback }
+
+
+==== h:\project3\src\components\ui\badge.jsx ====
+
+import * as React from "react"
+import { cva } from "class-variance-authority"
+import { cn } from "../../lib/utils"
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+function Badge({ className, variant, ...props }) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
+}
+
+export { Badge, badgeVariants }
+
+
+==== h:\project3\src\components\ui\button.jsx ====
+
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cn } from "../../lib/utils"
+
+const buttonVariants = {
+  default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+  destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+  outline: "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+  secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+  ghost: "hover:bg-accent hover:text-accent-foreground",
+  link: "text-primary underline-offset-4 hover:underline",
+}
+
+const buttonSizes = {
+  default: "h-9 px-4 py-2",
+  sm: "h-8 rounded-md px-3 text-xs",
+  lg: "h-10 rounded-md px-8",
+  icon: "h-9 w-9",
+}
+
+const Button = React.forwardRef(({ 
+  className, 
+  variant = "default", 
+  size = "default", 
+  asChild = false,
+  ...props 
+}, ref) => {
+  const Comp = asChild ? Slot : "button"
+  return (
+    <Comp
+      className={cn(
+        "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+        buttonVariants[variant],
+        buttonSizes[size],
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  )
+})
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+
+
+==== h:\project3\src\components\ui\calendar.jsx ====
+
+import * as React from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { DayPicker } from "react-day-picker"
+import { cn } from "../../lib/utils"
+import { buttonVariants } from "./button"
+
+function Calendar({
+  className,
+  classNames,
+  showOutsideDays = true,
+  ...props
+}) {
+  return (
+    <DayPicker
+      showOutsideDays={showOutsideDays}
+      className={cn("p-3", className)}
+      classNames={{
+        months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+        month: "space-y-4",
+        caption: "flex justify-center pt-1 relative items-center",
+        caption_label: "text-sm font-medium",
+        nav: "space-x-1 flex items-center",
+        nav_button: cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+        ),
+        nav_button_previous: "absolute left-1",
+        nav_button_next: "absolute right-1",
+        table: "w-full border-collapse space-y-1",
+        head_row: "flex",
+        head_cell:
+          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+        row: "flex w-full mt-2",
+        cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+        day: cn(
+          buttonVariants({ variant: "ghost" }),
+          "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
+        ),
+        day_selected:
+          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+        day_today: "bg-accent text-accent-foreground",
+        day_outside: "text-muted-foreground opacity-50",
+        day_disabled: "text-muted-foreground opacity-50",
+        day_range_middle:
+          "aria-selected:bg-accent aria-selected:text-accent-foreground",
+        day_hidden: "invisible",
+        ...classNames,
+      }}
+      components={{
+        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
+        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+      }}
+      {...props}
+    />
+  )
+}
+Calendar.displayName = "Calendar"
+
+export { Calendar }
+
+
+==== h:\project3\src\components\ui\card.jsx ====
+
+import * as React from "react"
+import { cn } from "../../lib/utils"
+
+const Card = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      className
+    )}
+    {...props}
+  />
+))
+Card.displayName = "Card"
+
+const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+))
+CardHeader.displayName = "CardHeader"
+
+const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+))
+CardTitle.displayName = "CardTitle"
+
+const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+CardDescription.displayName = "CardDescription"
+
+const CardContent = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
+
+const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+))
+CardFooter.displayName = "CardFooter"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+
+
+==== h:\project3\src\components\ui\checkbox.jsx ====
+
+import * as React from "react"
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { Check } from "lucide-react"
+import { cn } from "../../lib/utils"
+
+const Checkbox = React.forwardRef(({ className, ...props }, ref) => (
+  <CheckboxPrimitive.Root
+    ref={ref}
+    className={cn(
+      "peer h-4 w-4 shrink-0 rounded border border-primary shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+      className
+    )}
+    {...props}
+  >
+    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}>
+      <Check className="h-4 w-4" />
+    </CheckboxPrimitive.Indicator>
+  </CheckboxPrimitive.Root>
+))
+Checkbox.displayName = CheckboxPrimitive.Root.displayName
+
+export { Checkbox }
+
+
+==== h:\project3\src\components\ui\dialog.jsx ====
+
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { X } from "lucide-react"
+import { cn } from "../../lib/utils"
+
+const Dialog = DialogPrimitive.Root
+const DialogTrigger = DialogPrimitive.Trigger
+const DialogPortal = DialogPrimitive.Portal
+const DialogClose = DialogPrimitive.Close
+
+const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      className
+    )}
+    {...props}
+  />
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+
+const DialogContent = React.forwardRef(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </DialogPrimitive.Close>
+    </DialogPrimitive.Content>
+  </DialogPortal>
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
+
+const DialogHeader = ({ className, ...props }) => (
+  <div
+    className={cn(
+      "flex flex-col space-y-1.5 text-center sm:text-left",
+      className
+    )}
+    {...props}
+  />
+)
+DialogHeader.displayName = "DialogHeader"
+
+const DialogFooter = ({ className, ...props }) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className
+    )}
+    {...props}
+  />
+)
+DialogFooter.displayName = "DialogFooter"
+
+const DialogTitle = React.forwardRef(({ className, ...props }, ref) => (
+  <DialogPrimitive.Title
+    ref={ref}
+    className={cn(
+      "text-lg font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+))
+DialogTitle.displayName = DialogPrimitive.Title.displayName
+
+const DialogDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+DialogDescription.displayName = DialogPrimitive.Description.displayName
+
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+}
+
+
+==== h:\project3\src\components\ui\input.jsx ====
+
+import * as React from "react"
+import { cn } from "../../lib/utils"
+
+const Input = React.forwardRef(({ className, type, ...props }, ref) => {
+  return (
+    <input
+      type={type}
+      className={cn(
+        "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  )
+})
+Input.displayName = "Input"
+
+export { Input }
+
+
+==== h:\project3\src\components\ui\label.jsx ====
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { cn } from "../../lib/utils"
+
+const Label = React.forwardRef(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(
+      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+      className
+    )}
+    {...props}
+  />
+))
+Label.displayName = LabelPrimitive.Root.displayName
+
+export { Label }
+
+
+==== h:\project3\src\components\ui\popover.jsx ====
+
+import * as React from "react"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
+import { cn } from "../../lib/utils"
+
+const Popover = PopoverPrimitive.Root
+const PopoverTrigger = PopoverPrimitive.Trigger
+
+const PopoverContent = React.forwardRef(
+  ({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Content
+        ref={ref}
+        align={align}
+        sideOffset={sideOffset}
+        className={cn(
+          "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          className
+        )}
+        {...props}
+      />
+    </PopoverPrimitive.Portal>
+  )
+)
+PopoverContent.displayName = PopoverPrimitive.Content.displayName
+
+export { Popover, PopoverTrigger, PopoverContent }
+
+
+==== h:\project3\src\components\ui\progress.jsx ====
+
+import * as React from "react"
+import * as ProgressPrimitive from "@radix-ui/react-progress"
+import { cn } from "../../lib/utils"
+
+const Progress = React.forwardRef(({ className, value, className2, ...props }, ref) => (
+  <ProgressPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative h-2 w-full overflow-hidden rounded-full bg-gray-100",
+      className
+    )}
+    {...props}
+  >
+    <ProgressPrimitive.Indicator
+      className={cn(
+        "h-full w-full flex-1 bg-blue-600 transition-all",
+        className2
+      )}
+      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+    />
+  </ProgressPrimitive.Root>
+))
+Progress.displayName = ProgressPrimitive.Root.displayName
+
+export { Progress }
+
+
+==== h:\project3\src\components\ui\scroll-area.jsx ====
+
+import * as React from "react"
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+import { cn } from "../../lib/utils"
+
+const ScrollArea = React.forwardRef(({ className, children, ...props }, ref) => (
+  <ScrollAreaPrimitive.Root
+    ref={ref}
+    className={cn("relative overflow-hidden", className)}
+    {...props}
+  >
+    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+      {children}
+    </ScrollAreaPrimitive.Viewport>
+    <ScrollBar />
+    <ScrollAreaPrimitive.Corner />
+  </ScrollAreaPrimitive.Root>
+))
+ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
+
+const ScrollBar = React.forwardRef(({ className, orientation = "vertical", ...props }, ref) => (
+  <ScrollAreaPrimitive.ScrollAreaScrollbar
+    ref={ref}
+    orientation={orientation}
+    className={cn(
+      "flex touch-none select-none transition-colors",
+      orientation === "vertical" &&
+        "h-full w-2.5 border-l border-l-transparent p-[1px]",
+      orientation === "horizontal" &&
+        "h-2.5 border-t border-t-transparent p-[1px]",
+      className
+    )}
+    {...props}
+  >
+    <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
+  </ScrollAreaPrimitive.ScrollAreaScrollbar>
+))
+ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
+
+export { ScrollArea, ScrollBar }
+
+
+==== h:\project3\src\components\ui\select.jsx ====
+
+import * as React from "react"
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { Check, ChevronDown } from "lucide-react"
+import { cn } from "../../lib/utils"
+
+const Select = SelectPrimitive.Root
+const SelectGroup = SelectPrimitive.Group
+const SelectValue = SelectPrimitive.Value
+
+const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <SelectPrimitive.Icon asChild>
+      <ChevronDown className="h-4 w-4 opacity-50" />
+    </SelectPrimitive.Icon>
+  </SelectPrimitive.Trigger>
+))
+SelectTrigger.displayName = SelectPrimitive.Trigger.displayName
+
+const SelectContent = React.forwardRef(({ className, children, position = "popper", ...props }, ref) => (
+  <SelectPrimitive.Portal>
+    <SelectPrimitive.Content
+      ref={ref}
+      className={cn(
+        "relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        position === "popper" &&
+          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+        className
+      )}
+      position={position}
+      {...props}
+    >
+      <SelectPrimitive.Viewport
+        className={cn(
+          "p-1",
+          position === "popper" &&
+            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+        )}
+      >
+        {children}
+      </SelectPrimitive.Viewport>
+    </SelectPrimitive.Content>
+  </SelectPrimitive.Portal>
+))
+SelectContent.displayName = SelectPrimitive.Content.displayName
+
+const SelectLabel = React.forwardRef(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={cn("px-2 py-1.5 text-sm font-semibold", className)}
+    {...props}
+  />
+))
+SelectLabel.displayName = SelectPrimitive.Label.displayName
+
+const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => (
+  <SelectPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
+      <SelectPrimitive.ItemIndicator>
+        <Check className="h-4 w-4" />
+      </SelectPrimitive.ItemIndicator>
+    </span>
+    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+  </SelectPrimitive.Item>
+))
+SelectItem.displayName = SelectPrimitive.Item.displayName
+
+const SelectSeparator = React.forwardRef(({ className, ...props }, ref) => (
+  <SelectPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    {...props}
+  />
+))
+SelectSeparator.displayName = SelectPrimitive.Separator.displayName
+
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+}
+
+
+==== h:\project3\src\components\ui\sheet.jsx ====
+
+import * as React from "react"
+import * as SheetPrimitive from "@radix-ui/react-dialog"
+import { cn } from "../../lib/utils"
+import { X } from "lucide-react"
+
+const Sheet = SheetPrimitive.Root
+const SheetTrigger = SheetPrimitive.Trigger
+const SheetClose = SheetPrimitive.Close
+const SheetPortal = SheetPrimitive.Portal
+
+const SheetOverlay = React.forwardRef(({ className, ...props }, ref) => (
+  <SheetPrimitive.Overlay
+    className={cn(
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      className
+    )}
+    {...props}
+    ref={ref}
+  />
+))
+SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
+
+const SheetContent = React.forwardRef(({ side = "right", className, children, ...props }, ref) => (
+  <SheetPortal>
+    <SheetOverlay />
+    <SheetPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+        side === "left" && "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+        side === "right" && "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </SheetPrimitive.Close>
+    </SheetPrimitive.Content>
+  </SheetPortal>
+))
+SheetContent.displayName = SheetPrimitive.Content.displayName
+
+export { Sheet, SheetTrigger, SheetContent, SheetClose }
+
+
+==== h:\project3\src\components\ui\sidebar.jsx ====
+
+import React, { useState } from "react"
+import { cn } from "../../lib/utils"
+import { Button } from "./button"
+import { ScrollArea } from "./scroll-area"
+import { Sheet, SheetContent, SheetTrigger } from "./sheet"
+import { Home, LayoutDashboard, Users, Settings, Menu, X } from "lucide-react"
+
+const menuItems = [
+  { icon: Home, label: "Home", href: "/" },
+  { icon: LayoutDashboard, label: "Projects", href: "/projects" },
+  { icon: Users, label: "Team", href: "/team" },
+  { icon: Settings, label: "Settings", href: "/settings" },
+]
+
+export function Sidebar({ className }) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  return (
+    <div className={cn("relative", className)}>
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute right-4 top-4 lg:hidden"
+          >
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[240px] sm:w-[300px]">
+          <nav className="grid gap-1 py-4">
+            {menuItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                  "text-muted-foreground"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </a>
+            ))}
+          </nav>
+        </SheetContent>
+      </Sheet>
+
+      <aside className="fixed left-0 top-0 z-30 hidden h-full w-[240px] flex-col border-r bg-background lg:flex">
+        <div className="flex h-14 items-center border-b px-4">
+          <a href="/" className="flex items-center gap-2 font-semibold">
+            <LayoutDashboard className="h-6 w-6" />
+            <span className={cn("transition-opacity", isCollapsed ? "opacity-0" : "opacity-100")}>
+              Project Manager
+            </span>
+          </a>
+        </div>
+
+        <ScrollArea className="flex-1 py-4">
+          <nav className="grid gap-1 px-2">
+            {menuItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent hover:text-accent-foreground",
+                  "text-muted-foreground",
+                  isCollapsed && "justify-center"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                <span className={cn("transition-opacity", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
+                  {item.label}
+                </span>
+              </a>
+            ))}
+          </nav>
+        </ScrollArea>
+
+        <div className="mt-auto border-t p-4">
+          <Button
+            variant="outline"
+            size="icon"
+            className="ml-auto"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+          >
+            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+
+==== h:\project3\src\components\ui\switch.jsx ====
+
+import * as React from "react"
+import * as SwitchPrimitives from "@radix-ui/react-switch"
+import { cn } from "../../lib/utils"
+
+const Switch = React.forwardRef(({ className, ...props }, ref) => (
+  <SwitchPrimitives.Root
+    className={cn(
+      "peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-input",
+      className
+    )}
+    {...props}
+    ref={ref}
+  >
+    <SwitchPrimitives.Thumb
+      className={cn(
+        "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
+      )}
+    />
+  </SwitchPrimitives.Root>
+))
+Switch.displayName = SwitchPrimitives.Root.displayName
+
+export { Switch }
+
+
+==== h:\project3\src\components\ui\table.jsx ====
+
+import * as React from "react"
+import { cn } from "../../lib/utils"
+
+const Table = React.forwardRef(({ className, ...props }, ref) => (
+  <div className="relative w-full overflow-auto">
+    <table
+      ref={ref}
+      className={cn("w-full caption-bottom text-sm", className)}
+      {...props}
+    />
+  </div>
+))
+Table.displayName = "Table"
+
+const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
+  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+))
+TableHeader.displayName = "TableHeader"
+
+const TableBody = React.forwardRef(({ className, ...props }, ref) => (
+  <tbody
+    ref={ref}
+    className={cn("[&_tr:last-child]:border-0", className)}
+    {...props}
+  />
+))
+TableBody.displayName = "TableBody"
+
+const TableFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <tfoot
+    ref={ref}
+    className={cn("border-t bg-muted/50 font-medium [&>tr]:last:border-b-0", className)}
+    {...props}
+  />
+))
+TableFooter.displayName = "TableFooter"
+
+const TableRow = React.forwardRef(({ className, ...props }, ref) => (
+  <tr
+    ref={ref}
+    className={cn(
+      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      className
+    )}
+    {...props}
+  />
+))
+TableRow.displayName = "TableRow"
+
+const TableHead = React.forwardRef(({ className, ...props }, ref) => (
+  <th
+    ref={ref}
+    className={cn(
+      "h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      className
+    )}
+    {...props}
+  />
+))
+TableHead.displayName = "TableHead"
+
+const TableCell = React.forwardRef(({ className, ...props }, ref) => (
+  <td
+    ref={ref}
+    className={cn(
+      "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      className
+    )}
+    {...props}
+  />
+))
+TableCell.displayName = "TableCell"
+
+const TableCaption = React.forwardRef(({ className, ...props }, ref) => (
+  <caption
+    ref={ref}
+    className={cn("mt-4 text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+TableCaption.displayName = "TableCaption"
+
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+}
+
+
+==== h:\project3\src\components\ui\tabs.jsx ====
+
+import * as React from "react"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
+import { cn } from "../../lib/utils"
+
+const Tabs = TabsPrimitive.Root
+
+const TabsList = React.forwardRef(({ className, ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    className={cn(
+      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+      className
+    )}
+    {...props}
+  />
+))
+TabsList.displayName = TabsPrimitive.List.displayName
+
+const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
+  <TabsPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
+      className
+    )}
+    {...props}
+  />
+))
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+
+const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn(
+      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      className
+    )}
+    {...props}
+  />
+))
+TabsContent.displayName = TabsPrimitive.Content.displayName
+
+export { Tabs, TabsList, TabsTrigger, TabsContent }
+
+
+==== h:\project3\src\components\ui\textarea.jsx ====
+
+import * as React from "react"
+import { cn } from "../../lib/utils"
+
+const Textarea = React.forwardRef(({ className, ...props }, ref) => {
+  return (
+    <textarea
+      className={cn(
+        "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  )
+})
+Textarea.displayName = "Textarea"
+
+export { Textarea }
+
+
+==== h:\project3\src\components\ui\toast.jsx ====
+
+import * as React from "react"
+import * as ToastPrimitives from "@radix-ui/react-toast"
+import { cva } from "class-variance-authority"
+import { X } from "lucide-react"
+import { cn } from "../../lib/utils"
+
+const ToastProvider = ToastPrimitives.Provider
+
+const ToastViewport = React.forwardRef(({ className, ...props }, ref) => (
+  <ToastPrimitives.Viewport
+    ref={ref}
+    className={cn(
+      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      className
+    )}
+    {...props}
+  />
+))
+ToastViewport.displayName = ToastPrimitives.Viewport.displayName
+
+const toastVariants = cva(
+  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  {
+    variants: {
+      variant: {
+        default: "border bg-background",
+        destructive:
+          "destructive group border-destructive bg-destructive text-destructive-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
+  return (
+    <ToastPrimitives.Root
+      ref={ref}
+      className={cn(toastVariants({ variant }), className)}
+      {...props}
+    />
+  )
+})
+Toast.displayName = ToastPrimitives.Root.displayName
+
+const ToastAction = React.forwardRef(({ className, ...props }, ref) => (
+  <ToastPrimitives.Action
+    ref={ref}
+    className={cn(
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+      className
+    )}
+    {...props}
+  />
+))
+ToastAction.displayName = ToastPrimitives.Action.displayName
+
+const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
+  <ToastPrimitives.Close
+    ref={ref}
+    className={cn(
+      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      className
+    )}
+    toast-close=""
+    {...props}
+  >
+    <X className="h-4 w-4" />
+  </ToastPrimitives.Close>
+))
+ToastClose.displayName = ToastPrimitives.Close.displayName
+
+const ToastTitle = React.forwardRef(({ className, ...props }, ref) => (
+  <ToastPrimitives.Title
+    ref={ref}
+    className={cn("text-sm font-semibold", className)}
+    {...props}
+  />
+))
+ToastTitle.displayName = ToastPrimitives.Title.displayName
+
+const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <ToastPrimitives.Description
+    ref={ref}
+    className={cn("text-sm opacity-90", className)}
+    {...props}
+  />
+))
+ToastDescription.displayName = ToastPrimitives.Description.displayName
+
+export {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastAction,
+}
+
+
+==== h:\project3\src\components\ui\toaster.jsx ====
+
+import { useToast } from "./use-toast"
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "./toast"
+
+export function Toaster() {
+  const { toasts } = useToast()
+
+  return (
+    <ToastProvider>
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+      <ToastViewport />
+    </ToastProvider>
+  )
+}
+
+
+==== h:\project3\src\components\ui\use-toast.jsx ====
+
+import * as React from "react"
+
+const TOAST_LIMIT = 1
+const TOAST_REMOVE_DELAY = 1000000
+
+const actionTypes = {
+  ADD_TOAST: "ADD_TOAST",
+  UPDATE_TOAST: "UPDATE_TOAST",
+  DISMISS_TOAST: "DISMISS_TOAST",
+  REMOVE_TOAST: "REMOVE_TOAST",
+}
+
+let count = 0
+
+function genId() {
+  count = (count + 1) % Number.MAX_VALUE
+  return count.toString()
+}
+
+const toastTimeouts = new Map()
+
+const addToRemoveQueue = (toastId) => {
+  if (toastTimeouts.has(toastId)) {
+    return
+  }
+
+  const timeout = setTimeout(() => {
+    toastTimeouts.delete(toastId)
+    dispatch({
+      type: actionTypes.REMOVE_TOAST,
+      toastId: toastId,
+    })
+  }, TOAST_REMOVE_DELAY)
+
+  toastTimeouts.set(toastId, timeout)
+}
+
+export const reducer = (state, action) => {
+  switch (action.type) {
+    case actionTypes.ADD_TOAST:
+      return {
+        ...state,
+        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+      }
+
+    case actionTypes.UPDATE_TOAST:
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === action.toast.id ? { ...t, ...action.toast } : t
+        ),
+      }
+
+    case actionTypes.DISMISS_TOAST: {
+      const { toastId } = action
+
+      if (toastId) {
+        addToRemoveQueue(toastId)
+      } else {
+        state.toasts.forEach((toast) => {
+          addToRemoveQueue(toast.id)
+        })
+      }
+
+      return {
+        ...state,
+        toasts: state.toasts.map((t) =>
+          t.id === toastId || toastId === undefined
+            ? {
+                ...t,
+                open: false,
+              }
+            : t
+        ),
+      }
+    }
+    case actionTypes.REMOVE_TOAST:
+      if (action.toastId === undefined) {
+        return {
+          ...state,
+          toasts: [],
+        }
+      }
+      return {
+        ...state,
+        toasts: state.toasts.filter((t) => t.id !== action.toastId),
+      }
+  }
+}
+
+const listeners = []
+
+let memoryState = { toasts: [] }
+
+function dispatch(action) {
+  memoryState = reducer(memoryState, action)
+  listeners.forEach((listener) => {
+    listener(memoryState)
+  })
+}
+
+function toast({ ...props }) {
+  const id = genId()
+
+  const update = (props) =>
+    dispatch({
+      type: actionTypes.UPDATE_TOAST,
+      toast: { ...props, id },
+    })
+  const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id })
+
+  dispatch({
+    type: actionTypes.ADD_TOAST,
+    toast: {
+      ...props,
+      id,
+      open: true,
+      onOpenChange: (open) => {
+        if (!open) dismiss()
+      },
+    },
+  })
+
+  return {
+    id: id,
+    dismiss,
+    update,
+  }
+}
+
+function useToast() {
+  const [state, setState] = React.useState(memoryState)
+
+  React.useEffect(() => {
+    listeners.push(setState)
+    return () => {
+      const index = listeners.indexOf(setState)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, [state])
+
+  return {
+    ...state,
+    toast,
+    dismiss: (toastId) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+  }
+}
+
+export { useToast, toast }
+
+
+==== h:\project3\src\components\user\index.js ====
+
+export { UserManagement } from './user-management'
+
+
+==== h:\project3\src\components\user\use-users.js ====
+
+import { useState, useEffect } from 'react'
+import { useProjects } from '../ProjectContext'
+
+export function useUsers() {
+  const { users: contextUsers, setUsers } = useProjects()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      const data = await response.json()
+      setUsers(data)
+      setLoading(false)
+    } catch (err) {
+      setError(err.message)
+      setLoading(false)
+    }
+  }
+
+  const addUser = async (userData) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      })
+      const newUser = await response.json()
+      setUsers(prev => [...prev, newUser])
+      return newUser
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  const updateUser = async (userData) => {
+    try {
+      const response = await fetch(\`/api/users/\${userData.id}\`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      })
+      const updatedUser = await response.json()
+      setUsers(prev => prev.map(user => 
+        user.id === userData.id ? updatedUser : user
+      ))
+      return updatedUser
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  const deleteUser = async (userId) => {
+    try {
+      await fetch(\`/api/users/\${userId}\`, {
+        method: 'DELETE',
+      })
+      setUsers(prev => prev.filter(user => user.id !== userId))
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  return {
+    users: contextUsers,
+    loading,
+    error,
+    addUser,
+    updateUser,
+    deleteUser,
+  }
+}
+
+
+==== h:\project3\src\components\user\user-form.jsx ====
+
+import React from 'react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { generateUniqueId } from './utils'
+
+export function UserForm({ user, onSubmit, onDelete, onCancel }) {
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    const formData = {
+      id: user?.id || generateUniqueId(),
+      username: e.target.username.value,
+      password: e.target.password.value,
+    }
+    onSubmit(formData)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="username">Username</Label>
+        <Input
+          id="username"
+          name="username"
+          defaultValue={user?.username || ""}
+          placeholder="Enter username"
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          defaultValue={user?.password || ""}
+          placeholder="Enter password"
+          required
+        />
+      </div>
+      <div className="flex justify-end space-x-4 mt-8">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          {user ? "Update User" : "Add User"}
+        </Button>
+        {user && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onDelete}
+          >
+            Delete User
+          </Button>
+        )}
+      </div>
+    </form>
+  )
+}
+
+
+==== h:\project3\src\components\user\user-management.jsx ====
+
+import React, { useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
+import { UserForm } from './user-form'
+import { useUsers } from './use-users'
+
+export function UserManagement({ onClose }) {
+  const { addUser, updateUser, deleteUser } = useUsers()
+  const [selectedUser, setSelectedUser] = useState(null)
+
+  const handleSubmit = async (userData) => {
+    if (selectedUser) {
+      await updateUser({ ...selectedUser, ...userData })
+    } else {
+      await addUser(userData)
+    }
+    onClose?.()
+  }
+
+  const handleDelete = async () => {
+    if (selectedUser) {
+      await deleteUser(selectedUser.id)
+      onClose?.()
+    }
+  }
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>User Management</DialogTitle>
+        </DialogHeader>
+        <UserForm
+          user={selectedUser}
+          onSubmit={handleSubmit}
+          onDelete={handleDelete}
+          onCancel={onClose}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+==== h:\project3\src\components\user\utils.js ====
+
+export function generateUniqueId() {
+  return '_' + Math.random().toString(36).substr(2, 9)
+}
+

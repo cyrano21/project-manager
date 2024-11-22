@@ -1,0 +1,113 @@
+.auth-layout {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  .auth-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+  
+  .auth-content {
+    flex: 1;
+    margin-left: 50%;
+    padding: 2rem;
+    background: #fff;
+  }
+  
+  .auth-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  /* Styles pour les icônes dans les inputs */
+  .form-icon-container {
+    position: relative;
+  }
+  
+  .form-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+  }
+  
+  .form-icon-input {
+    padding-right: 2.5rem;
+  }
+  
+  /* Styles pour le séparateur */
+  .position-relative {
+    position: relative;
+  }
+  
+  .bg-body-secondary {
+    background-color: #e9ecef;
+  }
+  
+  .divider-content-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 0 1rem;
+    color: #6c757d;
+    font-size: 0.8rem;
+  }
+
+  /* Styles pour les liens */
+  .auth-content a {
+    text-decoration: none;
+    color: #3874ff;
+    background-color: transparent;
+  }
+
+  .auth-content a:hover {
+    color: #0a47ff;
+    text-decoration: underline;
+  }
+
+  .fw-bold {
+    color: #5e6e82;
+  }
+
+  /* Style pour le checkbox et son label */
+  .form-check {
+    display: flex;
+    align-items: flex-start;
+    padding-left: 1.5rem;
+  }
+
+  .form-check-input {
+    margin-top: 0.25rem;
+    margin-left: -1.5rem;
+    float: left;
+  }
+
+  .form-check-label {
+    margin-bottom: 0;
+    font-size: 0.8rem;
+    color: #5e6e82;
+  }
+
+  .text-transform-none {
+    text-transform: none;
+  }
+  
+  @media (max-width: 991.98px) {
+    .auth-bg {
+      display: none;
+    }
+    
+    .auth-content {
+      margin-left: 0;
+    }
+  }

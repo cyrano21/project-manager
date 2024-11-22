@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: 59 130 246;    /* blue-500 */
+  --color-secondary: 107 114 128; /* gray-500 */
+  --color-accent: 249 115 22;    /* orange-500 */
+}
+
+/* Classes d'animation personnalisées */
+.animate-in {
+  animation: animate-in 0.3s ease-in-out;
+}
+
+.fade-in-0 {
+  opacity: 0;
+  animation: fade-in 0.3s ease-in-out forwards;
+}
+
+.zoom-in-95 {
+  transform: scale(0.95);
+  animation: zoom-in 0.3s ease-in-out forwards;
+}
+
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.95);
+  }
+  to {
+    transform: scale(1);
+  }
+}
