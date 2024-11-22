@@ -25,7 +25,7 @@ export function ProjectBoardView() {
       id: generateUniqueId(),
       name: "New Project",
       status: "ONGOING",
-      image: "/default_card.webp",
+      image: "/images/project-default.svg",
     })
   }
 

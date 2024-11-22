@@ -17,7 +17,7 @@ export function ProjectCard({ project, onProjectSelect }) {
   return (
     <div className="relative h-56 rounded-lg overflow-hidden shadow-lg group bg-gray-100">
       <img
-        src={project.image || "/default_card.webp"}
+        src={project.image || "/images/project-default.svg"}
         alt={project.name}
         className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
       />
